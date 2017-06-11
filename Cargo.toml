@@ -1,0 +1,7 @@
+[package]
+name = "flow"
+version = "0.1.0"
+authors = ["leod <subtle.frustration@proton.me>"]
+
+[dependencies]
+ggez = "*"
