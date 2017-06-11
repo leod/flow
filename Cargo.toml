@@ -5,3 +5,5 @@ authors = ["Leonard Dahlmann <leo.dahlmann@gmail.com>"]
 
 [dependencies]
 ggez = "*"
+cgmath = "*"
+floating-duration = "*"
