@@ -3,13 +3,13 @@ use component;
 pub use types::ComponentId;
 use types::{Coords, Orientation};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum SwitchType {
     On,
     Off
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Element {
     Switch(SwitchType),
     Capacitor,
