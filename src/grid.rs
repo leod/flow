@@ -25,10 +25,10 @@ pub struct EdgeMap<T: Clone + Debug>(HashMap<(Coords, PosDir), T>);
 
 fn canonize_edge(c: Coords, d: Dir) -> (Coords, PosDir) {
     match d {
-        Dir::Left => (d.apply(c), PosDir::PosRight),
-        Dir::Right => (c, PosDir::PosRight),
-        Dir::Up => (d.apply(c), PosDir::PosDown),
-        Dir::Down => (c, PosDir::PosDown)
+        Dir::Left => (d.apply(c), PosDir::Right),
+        Dir::Right => (c, PosDir::Right),
+        Dir::Up => (d.apply(c), PosDir::Down),
+        Dir::Down => (c, PosDir::Down)
     }
 }
 
