@@ -41,8 +41,8 @@ impl Hud {
     pub fn update(&mut self, _ctx: &mut Context, camera: &Camera, dt_s: f32) {
         let mouse_p_t = Vector2::new(self.mouse_x as f32, self.mouse_y as f32);
         let mouse_p = camera.untransform(mouse_p_t);
-        let g_x = mouse_p.x.round() as usize;
-        let g_y = mouse_p.y.round() as usize;
+        let g_x = mouse_p.x.round() as isize;
+        let g_y = mouse_p.y.round() as isize;
         
         self.grid_coords = grid::Coords::new(g_x, g_y);
     }
