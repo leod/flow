@@ -15,8 +15,8 @@ pub enum Dir {
 // Only directions that increase a coordinate
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum PosDir {
-    PosRight,
-    PosDown
+    Right,
+    Down
 }
 
 impl Dir {
@@ -42,8 +42,8 @@ impl Dir {
 impl PosDir {
     pub fn to_dir(self: PosDir) -> Dir {
         match self {
-            PosDir::PosRight => Dir::Right,
-            PosDir::PosDown => Dir::Down
+            PosDir::Right => Dir::Right,
+            PosDir::Down => Dir::Down
         }
     }
 }

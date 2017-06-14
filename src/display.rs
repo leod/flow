@@ -54,12 +54,12 @@ impl Display {
             };
 
             let end = match dir {
-                PosDir::PosRight =>
+                PosDir::Right =>
                     graphics::Point {
                         x: (c.x+1) as f32 * self.edge_length,
                         y: c.y as f32 * self.edge_length
                     },
-                PosDir::PosDown =>
+                PosDir::Down =>
                     graphics::Point {
                         x: c.x as f32 * self.edge_length,
                         y: (c.y+1) as f32 * self.edge_length
