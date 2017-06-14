@@ -34,19 +34,19 @@ impl CameraInput {
             }
             &Input::KeyDown { keycode, keymod, repeat } => {
                 match keycode {
-                    Keycode::Left => self.delta.x = -1.0,
-                    Keycode::Right => self.delta.x = 1.0,
-                    Keycode::Up => self.delta.y = -1.0,
-                    Keycode::Down => self.delta.y = 1.0,
+                    Keycode::Left | Keycode::A => self.delta.x = -1.0,
+                    Keycode::Right | Keycode::D => self.delta.x = 1.0,
+                    Keycode::Up | Keycode::W => self.delta.y = -1.0,
+                    Keycode::Down | Keycode::S => self.delta.y = 1.0,
                     _ => ()
                 }
             }
             &Input::KeyUp { keycode, keymod, repeat } => {
                 match keycode {
-                    Keycode::Left => self.delta.x = 0.0,
-                    Keycode::Right => self.delta.x = 0.0,
-                    Keycode::Up => self.delta.y = 0.0,
-                    Keycode::Down => self.delta.y = 0.0,
+                    Keycode::Left | Keycode::A => self.delta.x = 0.0,
+                    Keycode::Right | Keycode::D => self.delta.x = 0.0,
+                    Keycode::Up | Keycode::W => self.delta.y = 0.0,
+                    Keycode::Down | Keycode::S => self.delta.y = 0.0,
                     _ => ()
                 }
             }
