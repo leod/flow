@@ -4,31 +4,41 @@ use input::{Input, Keycode};
 use camera::Camera;
 
 pub struct CameraInput {
+    min_zoom: f32,
+    max_zoom: f32,
+    scroll_speed: f32,
+    zoom_speed: f32,
+
     delta: Vector2<f32>,
-    speed: f32,
 }
 
 impl CameraInput {
-    pub fn new(speed: f32) -> CameraInput {
+    pub fn new(scroll_speed: f32) -> CameraInput {
         CameraInput {
+            min_zoom: 1.0,
+            max_zoom: 20.0,
+            scroll_speed: scroll_speed,
+            zoom_speed: 1.0,
             delta: Vector2::new(0.0, 0.0),
-            speed: speed
         }
     }
 
     pub fn input_event(&mut self, camera: &mut Camera, input: &Input) {
         match input {
             &Input::MouseWheel { x: _, y } => {
-                if y < 0 && camera.zoom > 1.0 {
-                    camera.zoom += 0.1 * y as f32;
-                    if camera.zoom < 1.0 {
-                        camera.zoom = 1.0;
+                // Zoom out
+                if y < 0 && camera.zoom > self.min_zoom {
+                    camera.zoom += self.zoom_speed * y as f32;
+                    if camera.zoom < self.min_zoom {
+                        camera.zoom = self.min_zoom;
                     }
                 }
-                if y > 0 && camera.zoom < 10.0 {
-                    camera.zoom += 0.1 * y as f32;
-                    if camera.zoom > 10.0 {
-                       camera.zoom = 10.0;
+
+                // Zoom in
+                if y > 0 && camera.zoom < self.max_zoom {
+                    camera.zoom += self.zoom_speed * y as f32;
+                    if camera.zoom > self.max_zoom {
+                       camera.zoom = self.max_zoom;
                     }
                 };
             }
@@ -55,6 +65,6 @@ impl CameraInput {
     }
 
     pub fn update(&mut self, camera: &mut Camera, dt_s: f32) {
-        camera.position += self.delta * self.speed * dt_s;
+        camera.position += self.delta * self.scroll_speed * dt_s;
     }
 }
