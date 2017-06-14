@@ -1,7 +1,8 @@
 use component;
 
 pub use types::ComponentId;
-use types::{Coords, Dir};
+use types::Dir;
+use grid;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum SwitchType {
@@ -21,7 +22,7 @@ pub type Id = u32;
 #[derive(Clone, Debug)]
 pub struct Component {
     id: Id,
-    top_left_position: Coords,
+    top_left_position: grid::Coords,
     direction: Dir,
     element: Element
 }
