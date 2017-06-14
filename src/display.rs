@@ -20,6 +20,8 @@ impl Display {
 
     pub fn draw_grid_edges(self: &Display, ctx: &mut Context, camera: &Camera,
                            grid: &Grid) -> GameResult<()> {
+        graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
+
         for (&(c, dir), &edge) in grid.iter_edges() {
             let start = graphics::Point {
                 x: c.x as f32 * self.edge_length,
