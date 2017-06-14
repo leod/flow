@@ -23,7 +23,16 @@ impl Camera {
         let shift = 0.5 * Vector2::new(self.window_width as f32,
                                        self.window_height as f32);
 
-        (p - self.position) * self.zoom + shift
+        let p_t = (p - self.position) * self.zoom + shift;
+        p_t
+    }
+
+    pub fn untransform(self: &Camera, p_t: Vector2<f32>) -> Vector2<f32> {
+        let shift = 0.5 * Vector2::new(self.window_width as f32,
+                                       self.window_height as f32);
+
+        let p = (p_t - shift) / self.zoom + self.position;
+        p
     }
 
     pub fn transform_point(self: &Camera, p: graphics::Point) -> graphics::Point {
