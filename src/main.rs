@@ -20,7 +20,7 @@ use ggez::event::{self, Keycode, Mod};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use types::{Orientation, Coords};
+use types::{Dir, Coords};
 use circuit::Circuit;
 use display::{Display, Camera};
 use grid::Grid;
@@ -49,7 +49,7 @@ impl MainState {
             font: font,
             text: text,
             frames: 0,
-            circuit: Circuit::new(Grid::new(100, 100), HashMap::new()),
+            circuit: Circuit::new(Grid::new(), HashMap::new()),
             display: Display::new(),
             camera: Camera::new(),
             camera_delta: Vector2::new(0.0, 0.0),
@@ -58,7 +58,6 @@ impl MainState {
         Ok(s)
     }
 }
-
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, dt: Duration) -> GameResult<()> {
@@ -130,16 +129,16 @@ pub fn main() {
 
     let state = &mut MainState::new(ctx).unwrap();
 
-    for x in 0..state.circuit.grid.width()-2 {
-        for y in 0..state.circuit.grid.height()-2 {
+    for x in 0..100 {
+        for y in 0..100 {
             if x % 2 == 0 && y % 3 == 0 {
-                state.circuit.grid.set_edge(Coords::new(x, y), Orientation::Right,
-                    grid::Edge::Connected(grid::Layer::Ground));
+                state.circuit.grid.set_edge(Coords::new(x, y), Dir::Right,
+                    grid::Edge { layer: grid::Layer::Ground });
             }
 
             if x % 2 == 1 {
-                state.circuit.grid.set_edge(Coords::new(x, y), Orientation::Down,
-                    grid::Edge::Connected(grid::Layer::Ground));
+                state.circuit.grid.set_edge(Coords::new(x, y), Dir::Down,
+                    grid::Edge { layer: grid::Layer::Ground });
             }
         }
     }

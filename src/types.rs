@@ -1,34 +1,49 @@
 use cgmath;
 
 pub type Coords = cgmath::Vector2<usize>;
+
 pub type ComponentId = u32;
 
-#[derive(Clone, Copy, Debug)]
-pub enum Orientation {
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub enum Dir {
     Left,
     Right,
     Up,
     Down,
 }
 
-use self::Orientation::*;
+// Only directions that increase a coordinate
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub enum PosDir {
+    PosRight,
+    PosDown
+}
 
-impl Orientation {
-    pub fn invert(self: Orientation) -> Orientation {
+impl Dir {
+    pub fn invert(self: Dir) -> Dir {
         match self {
-            Left => Right,
-            Right => Left,
-            Up => Down,
-            Down => Up
+            Dir::Left => Dir::Right,
+            Dir::Right => Dir::Left,
+            Dir::Up => Dir::Down,
+            Dir::Down => Dir::Up
         }
     }
 
-    pub fn apply(self: Orientation, c: Coords) -> Coords {
+    pub fn apply(self: Dir, c: Coords) -> Coords {
         match self {
-            Left => Coords::new(c.x - 1, c.y),
-            Right => Coords::new(c.x + 1, c.y),
-            Up => Coords::new(c.x, c.y - 1),
-            Down => Coords::new(c.x, c.y + 1)
+            Dir::Left => Coords::new(c.x - 1, c.y),
+            Dir::Right => Coords::new(c.x + 1, c.y),
+            Dir::Up => Coords::new(c.x, c.y - 1),
+            Dir::Down => Coords::new(c.x, c.y + 1)
+        }
+    }
+}
+
+impl PosDir {
+    pub fn to_dir(self: PosDir) -> Dir {
+        match self {
+            PosDir::PosRight => Dir::Right,
+            PosDir::PosDown => Dir::Down
         }
     }
 }
