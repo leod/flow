@@ -8,6 +8,9 @@ mod component;
 mod display;
 mod circuit;
 mod hud;
+mod camera;
+mod camera_input;
+mod input;
 
 use std::time::Duration;
 use std::collections::HashMap;
@@ -23,41 +26,35 @@ use ggez::graphics;
 
 use types::{Dir, Coords};
 use circuit::Circuit;
-use display::{Display, Camera};
+use display::Display;
 use grid::Grid;
 use component::Component;
-use hud::{Hud, Input};
+use hud::Hud;
+use camera::Camera;
+use camera_input::CameraInput;
+use input::Input;
 
 struct MainState {
-    font: graphics::Font,
-    text: graphics::Text,
-    frames: usize,
-	hud: Hud,
-
     circuit: Circuit,
 
+    frames: usize,
+
+	hud: Hud,
     display: Display,
 
     camera: Camera,
-    camera_delta: Vector2<f32>,
-    camera_speed: f32
+    camera_input: CameraInput,
 }
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
-        let text = graphics::Text::new(ctx, "Hello world!", &font)?;
-
         let s = MainState {
-            font: font,
-            text: text,
-            frames: 0,
-            hud: Hud::new(),
             circuit: Circuit::new(Grid::new(), HashMap::new()),
+            frames: 0,
+            hud: Hud::new(ctx)?,
             display: Display::new(),
             camera: Camera::new(),
-            camera_delta: Vector2::new(0.0, 0.0),
-            camera_speed: 10.0
+            camera_input: CameraInput::new(10.0)
         };
         Ok(s)
     }
@@ -66,14 +63,15 @@ impl MainState {
 impl MainState {
     fn input_event(&mut self, input: &Input) {
         self.hud.input_event(input);
+        self.camera_input.input_event(&mut self.camera, input);
     }
 }
 
 impl event::EventHandler for MainState {
     fn update(&mut self, _ctx: &mut Context, dt: Duration) -> GameResult<()> {
-        self.camera.position += self.camera_delta *
-                                self.camera_speed *
-                                dt.as_fractional_secs() as f32;
+        let dt_s = dt.as_fractional_secs() as f32;
+
+        self.camera_input.update(&mut self.camera, dt_s);
 
         Ok(())
     }
@@ -113,19 +111,6 @@ impl event::EventHandler for MainState {
             x: x,
             y: y
         });
-
-        if y < 0 && self.camera.zoom > 1.0 {
-            self.camera.zoom += 0.1 * y as f32;
-            if self.camera.zoom < 1.0 {
-                self.camera.zoom = 1.0;
-            }
-        }
-        if y > 0 && self.camera.zoom < 10.0 {
-            self.camera.zoom += 0.1 * y as f32;
-            if self.camera.zoom > 10.0 {
-                self.camera.zoom = 10.0;
-            }
-        };
     }
 
     fn mouse_motion_event(
@@ -152,13 +137,6 @@ impl event::EventHandler for MainState {
             repeat: repeat
         });
 
-        match keycode {
-            Keycode::Left => self.camera_delta.x = -1.0,
-            Keycode::Right => self.camera_delta.x = 1.0,
-            Keycode::Up => self.camera_delta.y = -1.0,
-            Keycode::Down => self.camera_delta.y = 1.0,
-            _ => ()
-        }
     }
 
     fn key_up_event(&mut self, keycode: Keycode, keymod: Mod, repeat: bool) {
@@ -168,15 +146,7 @@ impl event::EventHandler for MainState {
             repeat: repeat
         });
 
-        match keycode {
-            Keycode::Left => self.camera_delta.x = 0.0,
-            Keycode::Right => self.camera_delta.x = 0.0,
-            Keycode::Up => self.camera_delta.y = 0.0,
-            Keycode::Down => self.camera_delta.y = 0.0,
-            _ => ()
-        }
     }
-
 }
 
 pub fn main() {
