@@ -1,46 +1,19 @@
-use ggez::event::{MouseButton, MouseState, Keycode, Mod};
+use ggez::{GameResult, Context};
+use ggez::graphics;
+use input::{self, Input};
 
 pub struct Hud {
-
-}
-
-pub enum Input {
-	MouseButtonDown {
-		button: MouseButton,
-		x: i32,
-		y: i32
-	},
-	MouseButtonUp {
-		button: MouseButton,
-		x: i32,
-		y: i32
-	},
- 	MouseMotion {
-		state: MouseState,
-		x: i32,
-		y: i32,
-		xrel: i32,
-		yrel: i32
- 	},
-	MouseWheel {
-		x: i32,
-		y: i32
-	},
-	KeyDown {
-		keycode: Keycode,
-		keymod: Mod,
-		repeat: bool
-	},
-    KeyUp {
-        keycode: Keycode,
-        keymod: Mod,
-        repeat: bool
-    }
+    font: graphics::Font,
 }
 
 impl Hud {
-    pub fn new() -> Hud {
-        Hud {}
+    pub fn new(ctx: &mut Context) -> GameResult<Hud> {
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
+
+        let h = Hud {
+            font: font
+        };
+        Ok(h)
     }
 
 	pub fn input_event(&mut self, input: &Input) {
