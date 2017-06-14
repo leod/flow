@@ -15,8 +15,6 @@ mod input;
 use std::time::Duration;
 use std::collections::HashMap;
 
-use cgmath::Vector2;
-
 use floating_duration::TimeAsFloat;
 
 use ggez::conf;
@@ -28,7 +26,6 @@ use types::{Dir, Coords};
 use circuit::Circuit;
 use display::Display;
 use grid::Grid;
-use component::Component;
 use hud::Hud;
 use camera::Camera;
 use camera_input::CameraInput;
@@ -136,7 +133,6 @@ impl event::EventHandler for MainState {
             keymod: keymod,
             repeat: repeat
         });
-
     }
 
     fn key_up_event(&mut self, keycode: Keycode, keymod: Mod, repeat: bool) {
@@ -145,7 +141,6 @@ impl event::EventHandler for MainState {
             keymod: keymod,
             repeat: repeat
         });
-
     }
 }
 

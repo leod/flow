@@ -18,7 +18,7 @@ impl CameraInput {
 
     pub fn input_event(&mut self, camera: &mut Camera, input: &Input) {
         match input {
-            &Input::MouseWheel { x, y } => {
+            &Input::MouseWheel { x: _, y } => {
                 if y < 0 && camera.zoom > 1.0 {
                     camera.zoom += 0.1 * y as f32;
                     if camera.zoom < 1.0 {
@@ -32,7 +32,7 @@ impl CameraInput {
                     }
                 };
             }
-            &Input::KeyDown { keycode, keymod, repeat } => {
+            &Input::KeyDown { keycode, keymod: _, repeat: _ } => {
                 match keycode {
                     Keycode::Left | Keycode::A => self.delta.x = -1.0,
                     Keycode::Right | Keycode::D => self.delta.x = 1.0,
@@ -41,7 +41,7 @@ impl CameraInput {
                     _ => ()
                 }
             }
-            &Input::KeyUp { keycode, keymod, repeat } => {
+            &Input::KeyUp { keycode, keymod: _, repeat: _ } => {
                 match keycode {
                     Keycode::Left | Keycode::A => self.delta.x = 0.0,
                     Keycode::Right | Keycode::D => self.delta.x = 0.0,
