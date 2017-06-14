@@ -75,7 +75,9 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
+
         self.display.draw_grid_edges(ctx, &self.camera, &self.circuit.grid)?;
+        self.hud.draw(ctx)?;
 
         graphics::present(ctx);
 
