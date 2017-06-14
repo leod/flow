@@ -22,7 +22,7 @@ use ggez::event::{self, MouseButton, MouseState, Keycode, Mod};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use types::{Dir, Coords};
+use types::Dir;
 use circuit::Circuit;
 use display::Display;
 use grid::Grid;
@@ -65,10 +65,11 @@ impl MainState {
 }
 
 impl event::EventHandler for MainState {
-    fn update(&mut self, _ctx: &mut Context, dt: Duration) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context, dt: Duration) -> GameResult<()> {
         let dt_s = dt.as_fractional_secs() as f32;
 
         self.camera_input.update(&mut self.camera, dt_s);
+        self.hud.update(ctx, &self.camera, dt_s);
 
         Ok(())
     }
@@ -77,7 +78,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
 
         self.display.draw_grid_edges(ctx, &self.camera, &self.circuit.grid)?;
-        self.hud.draw(ctx)?;
+        self.hud.draw(ctx, &self.camera)?;
 
         graphics::present(ctx);
 
@@ -155,12 +156,12 @@ pub fn main() {
     for x in 0..100 {
         for y in 0..100 {
             if x % 2 == 0 && y % 3 == 0 {
-                state.circuit.grid.set_edge(Coords::new(x, y), Dir::Right,
+                state.circuit.grid.set_edge(grid::Coords::new(x, y), Dir::Right,
                     grid::Edge { layer: grid::Layer::Ground });
             }
 
             if x % 2 == 1 {
-                state.circuit.grid.set_edge(Coords::new(x, y), Dir::Down,
+                state.circuit.grid.set_edge(grid::Coords::new(x, y), Dir::Down,
                     grid::Edge { layer: grid::Layer::Ground });
             }
         }
