@@ -1,6 +1,6 @@
 use cgmath;
 
-pub type Coords = cgmath::Vector2<usize>;
+pub type Coords = cgmath::Vector2<isize>;
 
 pub type ComponentId = u32;
 
