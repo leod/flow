@@ -7,6 +7,7 @@ mod grid;
 mod component;
 mod display;
 mod circuit;
+mod hud;
 
 use std::time::Duration;
 use std::collections::HashMap;
@@ -16,7 +17,7 @@ use cgmath::Vector2;
 use floating_duration::TimeAsFloat;
 
 use ggez::conf;
-use ggez::event::{self, Keycode, Mod};
+use ggez::event::{self, MouseButton, MouseState, Keycode, Mod};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
@@ -25,11 +26,13 @@ use circuit::Circuit;
 use display::{Display, Camera};
 use grid::Grid;
 use component::Component;
+use hud::{Hud, Input};
 
 struct MainState {
     font: graphics::Font,
     text: graphics::Text,
     frames: usize,
+	hud: Hud,
 
     circuit: Circuit,
 
@@ -49,6 +52,7 @@ impl MainState {
             font: font,
             text: text,
             frames: 0,
+            hud: Hud::new(),
             circuit: Circuit::new(Grid::new(), HashMap::new()),
             display: Display::new(),
             camera: Camera::new(),
@@ -56,6 +60,12 @@ impl MainState {
             camera_speed: 10.0
         };
         Ok(s)
+    }
+}
+
+impl MainState {
+    fn input_event(&mut self, input: &Input) {
+        self.hud.input_event(input);
     }
 }
 
@@ -70,11 +80,6 @@ impl event::EventHandler for MainState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
-        // Drawables are drawn from their center.
-        /*let dest_point = graphics::Point::new(self.text.width() as f32 / 2.0 + 10.0,
-                                              self.text.height() as f32 / 2.0 + 10.0);
-        graphics::draw(ctx, &self.text, dest_point, 0.0)?;*/
-
         self.display.draw_grid_edges(ctx, &self.camera, &self.circuit.grid)?;
 
         graphics::present(ctx);
@@ -87,27 +92,28 @@ impl event::EventHandler for MainState {
         Ok(())
     }
 
-    fn key_down_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
-        match keycode {
-            Keycode::Left => self.camera_delta.x = -1.0,
-            Keycode::Right => self.camera_delta.x = 1.0,
-            Keycode::Up => self.camera_delta.y = -1.0,
-            Keycode::Down => self.camera_delta.y = 1.0,
-            _ => ()
-        }
+    fn mouse_button_down_event(&mut self, button: MouseButton, x: i32, y: i32) {
+        self.input_event(&Input::MouseButtonDown {
+            button: button,
+            x: x, 
+            y: y
+        });
     }
 
-    fn key_up_event(&mut self, keycode: Keycode, _keymod: Mod, _repeat: bool) {
-        match keycode {
-            Keycode::Left => self.camera_delta.x = 0.0,
-            Keycode::Right => self.camera_delta.x = 0.0,
-            Keycode::Up => self.camera_delta.y = 0.0,
-            Keycode::Down => self.camera_delta.y = 0.0,
-            _ => ()
-        }
+    fn mouse_button_up_event(&mut self, button: MouseButton, x: i32, y: i32) {
+        self.input_event(&Input::MouseButtonUp {
+            button: button,
+            x: x,
+            y: y
+        });
     }
 
-    fn mouse_wheel_event(&mut self, _x: i32, y: i32) {
+    fn mouse_wheel_event(&mut self, x: i32, y: i32) {
+        self.input_event(&Input::MouseWheel {
+            x: x,
+            y: y
+        });
+
         if y < 0 && self.camera.zoom > 1.0 {
             self.camera.zoom += 0.1 * y as f32;
             if self.camera.zoom < 1.0 {
@@ -119,13 +125,63 @@ impl event::EventHandler for MainState {
             if self.camera.zoom > 10.0 {
                 self.camera.zoom = 10.0;
             }
+        };
+    }
+
+    fn mouse_motion_event(
+        &mut self, 
+        state: MouseState, 
+        x: i32, 
+        y: i32, 
+        xrel: i32, 
+        yrel: i32
+    ) {
+        self.input_event(&Input::MouseMotion {
+            state: state,
+            x: x,
+            y: y,
+            xrel: xrel,
+            yrel: yrel
+        });
+    }
+
+    fn key_down_event(&mut self, keycode: Keycode, keymod: Mod, repeat: bool) {
+        self.input_event(&Input::KeyDown {
+            keycode: keycode,
+            keymod: keymod,
+            repeat: repeat
+        });
+
+        match keycode {
+            Keycode::Left => self.camera_delta.x = -1.0,
+            Keycode::Right => self.camera_delta.x = 1.0,
+            Keycode::Up => self.camera_delta.y = -1.0,
+            Keycode::Down => self.camera_delta.y = 1.0,
+            _ => ()
         }
     }
+
+    fn key_up_event(&mut self, keycode: Keycode, keymod: Mod, repeat: bool) {
+        self.input_event(&Input::KeyUp {
+            keycode: keycode,
+            keymod: keymod,
+            repeat: repeat
+        });
+
+        match keycode {
+            Keycode::Left => self.camera_delta.x = 0.0,
+            Keycode::Right => self.camera_delta.x = 0.0,
+            Keycode::Up => self.camera_delta.y = 0.0,
+            Keycode::Down => self.camera_delta.y = 0.0,
+            _ => ()
+        }
+    }
+
 }
 
 pub fn main() {
     let c = conf::Conf::new();
-    let ctx = &mut Context::load_from_conf("helloworld", "ggez", c).unwrap();
+    let ctx = &mut Context::load_from_conf("flow", "leod", c).unwrap();
 
     let state = &mut MainState::new(ctx).unwrap();
 
