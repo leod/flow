@@ -20,6 +20,24 @@ pub enum PosDir {
 }
 
 impl Dir {
+    pub fn from_coords(a: Coords, b: Coords) -> Dir {
+        if b.x == a.x - 1 {
+            assert!(a.y == b.y);
+            Dir::Left
+        } else if b.x == a.x + 1 {
+            assert!(a.y == b.y);
+            Dir::Right
+        } else if b.y == a.y - 1 {
+            assert!(a.x == b.x);
+            Dir::Up
+        } else if b.y == a.y + 1 {
+            assert!(a.x == b.x);
+            Dir::Down
+        } else {
+            panic!("a == b");
+        }
+    }
+
     pub fn invert(self: Dir) -> Dir {
         match self {
             Dir::Left => Dir::Right,
