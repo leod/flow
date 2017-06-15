@@ -19,6 +19,12 @@ pub enum PosDir {
     Down
 }
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub enum Axis {
+    Horizontal,
+    Vertical
+}
+
 impl Dir {
     pub fn from_coords(a: Coords, b: Coords) -> Dir {
         if b.x == a.x - 1 {
@@ -53,6 +59,15 @@ impl Dir {
             Dir::Right => Coords::new(c.x + 1, c.y),
             Dir::Up => Coords::new(c.x, c.y - 1),
             Dir::Down => Coords::new(c.x, c.y + 1)
+        }
+    }
+
+    pub fn to_axis(self: Dir) -> Axis {
+        match self {
+            Dir::Left => Axis::Horizontal,
+            Dir::Right => Axis::Horizontal,
+            Dir::Up => Axis::Vertical,
+            Dir::Down => Axis::Vertical
         }
     }
 }
