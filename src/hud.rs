@@ -10,10 +10,10 @@ use ggez::graphics::{self, Drawable};
 use types::{Dir, Axis};
 use input::{self, Input};
 use camera::Camera;
-use grid::{self, Grid};
 use component::{Component, Element};
-use circuit::Circuit;
+use circuit::{Circuit, Action};
 use display;
+use grid;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 enum State {
@@ -23,14 +23,10 @@ enum State {
         axis_lock: Option<Axis>,
         undo: Vec<Action>
     },
-    PlaceElement(Element)
-}
-
-#[derive(PartialEq, Eq, Clone, Debug)]
-enum Action {
-    SetPoint(grid::Coords, Option<grid::Point>),
-    SetEdge(grid::Coords, Dir, Option<grid::Edge>),
-    Compound(Vec<Action>)
+    PlaceElement {
+        element: Element,
+        rotation: usize
+    }
 }
 
 pub struct Hud {
@@ -54,32 +50,6 @@ fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> grid::Coords {
     let g_y = mouse_p.y.round() as isize;
 
     grid::Coords::new(g_x, g_y)
-}
-
-impl Action {
-    fn perform(self, circuit: &mut Circuit) -> Action {
-        match self {
-            Action::SetPoint(c, p_new) => {
-                let p = circuit.grid.get_point(c);
-                let undo = Action::SetPoint(c, p);
-                circuit.grid.set_point_option(c, p_new);
-                undo
-            }
-            Action::SetEdge(c, dir, e_new) => {
-                let e =  circuit.grid.get_edge(c, dir);
-                let undo = Action::SetEdge(c, dir, e);
-                circuit.grid.set_edge_option(c, dir, e_new);
-                undo
-            }
-            Action::Compound(actions) => {
-                let mut undo = actions.into_iter()
-                                      .map(|action| { action.perform(circuit) })
-                                      .collect::<Vec<_>>();
-                undo.reverse();
-                Action::Compound(undo) 
-            }
-        }
-    }
 }
 
 impl Hud {
@@ -118,7 +88,7 @@ impl Hud {
                 undo.reverse();
                 Some(Action::Compound(undo.clone()))
             },
-            State::PlaceElement(_) => None,
+            State::PlaceElement { .. } => None,
         };
 
         if let Some(u) = undo_action {
@@ -150,30 +120,19 @@ impl Hud {
                     input::Keycode::LCtrl => {
                         self.hold_control = true;
                     }
-                    input::Keycode::Z => {
-                        if self.hold_control == true {
-                            if let Some(undo_action) = self.undo.pop() {
-                                let redo_action = undo_action.perform(circuit);
-                                self.redo.push(redo_action);
-                            }
-                        }
-                    }
-                    input::Keycode::Y => {
-                        if self.hold_control == true {
-                            if let Some(redo_action) = self.redo.pop() {
-                                let undo_action = redo_action.perform(circuit);
-                                self.undo.push(undo_action);
-                            }
-                        }
-                    }
                     input::Keycode::Num1 => {
                         self.change_state(State::Initial);
                     }
                     input::Keycode::Num2 => {
-                        self.change_state(State::PlaceElement(Element::Source));
+                        self.change_state(State::PlaceElement {
+                            element: Element::Source,
+                            rotation: 0,
+                        });
                     }
                     _ => {}
                 }
+
+                self.key_down_event(circuit, camera, keycode);
             }
             &Input::KeyUp { keycode, keymod: _, repeat: _ } => {
                 match keycode {
@@ -210,27 +169,26 @@ impl Hud {
             State::Initial => {
                 match button {
                     input::MouseButton::Left => {
-                        let action = Action::SetPoint(grid_coords,
-                                                      Some(grid::Point::Node));
-                        let undo =
-                            if circuit.grid.get_point(grid_coords).is_none() {
-                                let undo_action = action.perform(circuit);
-                                vec![undo_action]
-                            } else {
-                                vec![]
-                            };
+                        let component = Component {
+                            top_left_pos: grid_coords,
+                            element: Element::Node,
+                            rotation: 0
+                        };
 
-                        let new_state = State::Drawing {
+                        let action = Action::PlaceComponent(component);
+                        let undo_action = action.try_perform(circuit);
+
+                        self.change_state(State::Drawing {
                             last_grid_coords: grid_coords,
                             axis_lock: None,
-                            undo: undo
-                        };
-                        self.change_state(new_state);
+                            undo: undo_action.into_iter().collect()
+                        });
                     }
                     input::MouseButton::Right => {
-                        let action = Action::SetPoint(grid_coords, None);
-                        let undo_action = action.perform(circuit);
-                        self.push_undo(undo_action);
+                        let action = Action::RemoveComponentAtPos(grid_coords);
+                        if let Some(undo_action) = action.try_perform(circuit) {
+                            self.push_undo(undo_action);
+                        }
                     }
                     _ => {}
                 }
@@ -243,8 +201,17 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::PlaceElement(element) => {
-                
+            State::PlaceElement { element, rotation } => {
+                let component = Component {
+                    top_left_pos: grid_coords,
+                    element: element,
+                    rotation: 0
+                };
+                let action = Action::PlaceComponent(component);
+
+                if let Some(undo_action) = action.try_perform(circuit) {
+                    self.push_undo(undo_action);
+                }
             }
         }
     }
@@ -267,7 +234,39 @@ impl Hud {
                     _ => {}
                 }
             },
-            State::PlaceElement(_) => {}
+            State::PlaceElement { .. } => {}
+        }
+    }
+
+    fn key_down_event(
+        &mut self,
+        circuit: &mut Circuit,
+        camera: &Camera,
+        keycode: input::Keycode,
+    ) {
+        match self.state {
+            State::Initial | State::PlaceElement { .. } => {
+                match keycode {
+                    input::Keycode::Z => {
+                        if self.hold_control == true {
+                            if let Some(undo_action) = self.undo.pop() {
+                                let redo_action = undo_action.perform(circuit);
+                                self.redo.push(redo_action);
+                            }
+                        }
+                    }
+                    input::Keycode::Y => {
+                        if self.hold_control == true {
+                            if let Some(redo_action) = self.redo.pop() {
+                                let undo_action = redo_action.perform(circuit);
+                                self.undo.push(undo_action);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
         }
     }
 
@@ -318,11 +317,14 @@ impl Hud {
                         let c = grid::Coords::new(x, y);
 
                         if prev_c.is_none() || Some(c) != prev_c {
-                            if circuit.grid.get_point(c).is_none() {
-                                let action =
-                                    Action::SetPoint(c, Some(grid::Point::Node));
-                                let undo_action = action.perform(circuit);
-                                undo.push(undo_action);
+                            let component = Component {
+                                top_left_pos: c,
+                                element: Element::Node,
+                                rotation: 0
+                            };
+                            let action = Action::PlaceComponent(component);
+                            if let Some(u_action) = action.try_perform(circuit) {
+                                undo.push(u_action);
                             }
 
                             if let Some(p) = prev_c {
@@ -331,9 +333,10 @@ impl Hud {
                                     layer: grid::Layer::Ground
                                 };
 
-                                let action = Action::SetEdge(p, dir, Some(edge));
-                                let undo_action = action.perform(circuit);
-                                undo.push(undo_action);
+                                let action = Action::PlaceEdge(p, dir, edge);
+                                if let Some(u_action) = action.try_perform(circuit) {
+                                    undo.push(u_action); 
+                                }
 
                                 if self.hold_control && axis_lock.is_none() {
                                     *axis_lock = Some(dir.to_axis());
@@ -347,7 +350,7 @@ impl Hud {
 
                 *last_grid_coords = locked_coords;
             }
-            State::PlaceElement(_) => {}
+            State::PlaceElement { .. } => {}
         }
     }
 

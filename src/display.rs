@@ -3,8 +3,9 @@ use cgmath::Vector2;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
+use grid;
 use types::PosDir;
-use grid::{self, Grid};
+use circuit::Circuit;
 use camera::Camera;
 
 pub const EDGE_LENGTH: f32 = 1.5;
@@ -22,11 +23,11 @@ impl Display {
         self: &Display,
         ctx: &mut Context,
         camera: &Camera,
-        grid: &Grid
+        circuit: &Circuit,
     ) -> GameResult<()> {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
-        for (&(c, dir), &edge) in grid.iter_edges() {
+        for (&(c, dir), &edge) in circuit.edges().iter() {
             let a = camera.transform(c.cast() * EDGE_LENGTH);
             let b = camera.transform(dir.apply(c).cast() * EDGE_LENGTH);
 
@@ -43,11 +44,11 @@ impl Display {
         self: &Display,
         ctx: &mut Context,
         camera: &Camera,
-        grid: &Grid
+        circuit: &Circuit,
     ) -> GameResult<()> {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
-        for (&c, &point) in grid.iter_points() {
+        for (&c, &point) in circuit.points().iter() {
             let p_t = camera.transform(c.cast() * EDGE_LENGTH);
 
             let r = graphics::Rect {
