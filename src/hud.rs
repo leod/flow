@@ -1,8 +1,13 @@
+use std::cmp;
+use std::iter::once;
+use std::io::{self, Write};
+
 use cgmath::Vector2;
 
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
+use types::Dir;
 use input::{self, Input};
 use camera::Camera;
 use grid::{self, Grid};
@@ -60,13 +65,13 @@ impl Hud {
                 self.mouse_x = x;
                 self.mouse_y = y;
 
-                self.mouse_motion_event(circuit, camera, input, x, y);
+                self.mouse_motion_event(circuit, camera, x, y);
             }
             &Input::MouseButtonDown { button, x, y } => {
-                self.mouse_button_down_event(circuit, camera, input, button, x, y);
+                self.mouse_button_down_event(circuit, camera, button, x, y);
             }
             &Input::MouseButtonUp { button, x, y } => {
-                self.mouse_button_up_event(circuit, camera, input, button, x, y);
+                self.mouse_button_up_event(circuit, camera, button, x, y);
             }
             _ => {}
         }
@@ -76,20 +81,50 @@ impl Hud {
         &mut self,
         circuit: &mut Circuit,
         camera: &Camera,
-        input: &Input,
-        x: i32,
-        y: i32
+        mouse_x: i32,
+        mouse_y: i32
     ) {
         match self.state {
             State::Initial => {}
             State::Drawing { last_grid_coords } => {
                 let grid_coords = screen_to_grid_coords(camera,
-                                                        self.mouse_x,
-                                                        self.mouse_y);
-                if grid_coords != last_grid_coords &&
-                   circuit.grid.get_point(grid_coords).is_none() {
-                    println!("setting {:?}", grid_coords);
-                    circuit.grid.set_point(grid_coords, grid::Point::Node);
+                                                        mouse_x,
+                                                        mouse_y);
+
+                if grid_coords != last_grid_coords {
+                    // We might have jumped more than one grid point.
+                    // In this case, draw two lines to get there
+                    let min_x = cmp::min(grid_coords.x, last_grid_coords.x);
+                    let max_x = cmp::max(grid_coords.x, last_grid_coords.x);
+                    let min_y = cmp::min(grid_coords.y, last_grid_coords.y);
+                    let max_y = cmp::max(grid_coords.y, last_grid_coords.y);
+
+                    let line_v = (min_x..max_x+1).zip(once(min_y).cycle());
+                    let line_h = once(max_x).cycle().zip(min_y..max_y+1);
+                    let lines = line_v.chain(line_h);
+
+                    let mut prev_c = last_grid_coords;
+                    for (x, y) in lines {
+                        let c = grid::Coords::new(x, y);
+
+                        if c != prev_c {
+                            if circuit.grid.get_point(c).is_none() {
+                                circuit.grid.set_point(c, grid::Point::Node);
+                            }
+
+                            let dir = Dir::from_coords(prev_c, c);
+                            let edge = grid::Edge {
+                                layer: grid::Layer::Ground
+                            };
+                            circuit.grid.set_edge(prev_c, dir, edge);
+                        }
+
+                        prev_c = c;
+                    }
+
+                    self.state = State::Drawing {
+                        last_grid_coords: grid_coords
+                    };
                 }
             }
         }
@@ -99,7 +134,6 @@ impl Hud {
         &mut self,
         circuit: &mut Circuit,
         camera: &Camera,
-        input: &Input,
         button: input::MouseButton,
         x: i32,
         y: i32
@@ -137,10 +171,9 @@ impl Hud {
         &mut self,
         circuit: &mut Circuit,
         camera: &Camera,
-        input: &Input,
         button: input::MouseButton,
-        x: i32,
-        y: i32
+        _x: i32,
+        _y: i32
     ) {
         match self.state {
             State::Initial => {}
