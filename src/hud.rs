@@ -22,6 +22,10 @@ enum State {
     }
 }
 
+enum Action {
+
+}
+
 pub struct Hud {
     font: graphics::Font,
 

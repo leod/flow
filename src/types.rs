@@ -44,7 +44,7 @@ impl Dir {
         }
     }
 
-    pub fn invert(self: Dir) -> Dir {
+    pub fn invert(self) -> Dir {
         match self {
             Dir::Left => Dir::Right,
             Dir::Right => Dir::Left,
@@ -53,7 +53,7 @@ impl Dir {
         }
     }
 
-    pub fn apply(self: Dir, c: Coords) -> Coords {
+    pub fn apply(self, c: Coords) -> Coords {
         match self {
             Dir::Left => Coords::new(c.x - 1, c.y),
             Dir::Right => Coords::new(c.x + 1, c.y),
@@ -62,7 +62,7 @@ impl Dir {
         }
     }
 
-    pub fn to_axis(self: Dir) -> Axis {
+    pub fn to_axis(self) -> Axis {
         match self {
             Dir::Left => Axis::Horizontal,
             Dir::Right => Axis::Horizontal,
@@ -73,17 +73,26 @@ impl Dir {
 }
 
 impl PosDir {
-    pub fn to_dir(self: PosDir) -> Dir {
+    pub fn to_dir(self) -> Dir {
         match self {
             PosDir::Right => Dir::Right,
             PosDir::Down => Dir::Down
         }
     }
 
-    pub fn apply(self: PosDir, c: Coords) -> Coords {
+    pub fn apply(self, c: Coords) -> Coords {
         match self {
             PosDir::Right => Coords::new(c.x + 1, c.y),
             PosDir::Down => Coords::new(c.x, c.y + 1)
+        }
+    }
+}
+
+impl Axis {
+    pub fn invert(self) -> Axis {
+        match self {
+            Axis::Horizontal => Axis::Vertical,
+            Axis::Vertical => Axis::Horizontal
         }
     }
 }
