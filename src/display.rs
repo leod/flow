@@ -1,6 +1,7 @@
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
+use types::Rect;
 use circuit::Circuit;
 use camera::Camera;
 use component::Element;
@@ -58,6 +59,9 @@ impl Display {
                     };
 
                     graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+                }
+                Element::Source => {
+                    //c.element.descr().size;
                 }
                 _ => {}
             }

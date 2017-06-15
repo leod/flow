@@ -1,5 +1,5 @@
 pub use types::ComponentId;
-use types::Dir;
+use types::{Dir, Rect};
 use grid;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
@@ -51,5 +51,15 @@ impl Element {
                 edge_points: vec![(Dir::Right, 1)],
             }
         }
+    }
+}
+
+impl Component {
+    pub fn rect(&self) -> Rect {
+        Rect {
+            pos: self.top_left_pos,
+            size: self.element.descr().size
+        }
+        .rotate_n(self.rotation)
     }
 }

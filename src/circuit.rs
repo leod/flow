@@ -58,15 +58,10 @@ impl Action {
     pub fn can_perform(&self, circuit: &Circuit) -> bool {
         match self {
             &Action::PlaceComponent(ref component) => {
-                let descr = component.element.descr();
-                let rect = Rect {
-                    pos: component.top_left_pos, 
-                    size: descr.size
-                };
-                let rot_rect = rect.rotate_n(component.rotation);
-
                 // Check that the grid points are empty
-                rot_rect.iter().all(|c| !circuit.points.contains_key(&c))
+                component.rect()
+                    .iter()
+                    .all(|c| !circuit.points.contains_key(&c))
             }
             &Action::RemoveComponent(ref component_id) => {
                 circuit.components.contains_key(component_id)
@@ -100,6 +95,8 @@ impl Action {
     pub fn perform(self, circuit: &mut Circuit) -> Action {
         assert!(self.can_perform(circuit));
 
+        println!("circuit action: {:?}", self);
+
         match self {
             Action::PlaceComponent(ref component) => {
                 // Insert in component map
@@ -110,16 +107,8 @@ impl Action {
                 circuit.next_component_id += 1;
 
                 // Mark grid points as used
-                let descr = component.element.descr();
-                let rect = Rect {
-                    pos: component.top_left_pos, 
-                    size: descr.size
-                };
-                let rot_rect = rect.rotate_n(component.rotation);
-
                 let point = Point(component_id);
-
-                for c in rot_rect.iter() {
+                for c in component.rect().iter() {
                     circuit.points.insert(c, point);
                 }
 
