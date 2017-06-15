@@ -27,28 +27,13 @@ impl Display {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
         for (&(c, dir), &edge) in grid.iter_edges() {
-            let start = graphics::Point {
-                x: c.x as f32 * EDGE_LENGTH,
-                y: c.y as f32 * EDGE_LENGTH
-            };
+            let a = camera.transform(c.cast() * EDGE_LENGTH);
+            let b = camera.transform(dir.apply(c).cast() * EDGE_LENGTH);
 
-            let end = match dir {
-                PosDir::Right =>
-                    graphics::Point {
-                        x: (c.x+1) as f32 * EDGE_LENGTH,
-                        y: c.y as f32 * EDGE_LENGTH
-                    },
-                PosDir::Down =>
-                    graphics::Point {
-                        x: c.x as f32 * EDGE_LENGTH,
-                        y: (c.y+1) as f32 * EDGE_LENGTH
-                    },
-                _ =>
-                    panic!("unexpected edge orientation")
-            };
+            let p_a = graphics::Point::new(a.x, a.y);
+            let p_b = graphics::Point::new(b.x, b.y);
 
-            graphics::line(ctx,
-                &vec![camera.transform_point(start), camera.transform_point(end)])?;
+            graphics::line(ctx, &vec![p_a, p_b]);
         }
 
         Ok(())

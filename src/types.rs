@@ -46,4 +46,11 @@ impl PosDir {
             PosDir::Down => Dir::Down
         }
     }
+
+    pub fn apply(self: PosDir, c: Coords) -> Coords {
+        match self {
+            PosDir::Right => Coords::new(c.x + 1, c.y),
+            PosDir::Down => Coords::new(c.x, c.y + 1)
+        }
+    }
 }
