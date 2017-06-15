@@ -1,7 +1,3 @@
-use std::collections::HashSet;
-
-use component;
-
 pub use types::ComponentId;
 use types::Dir;
 use grid;
@@ -30,8 +26,6 @@ pub struct ElementDescr {
     //       positions must be smaller than the size.
     pub edge_points: Vec<(Dir, usize)>
 }
-
-pub type Id = u32;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Component {
