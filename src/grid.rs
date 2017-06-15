@@ -69,12 +69,19 @@ impl Grid {
         };
     }
 
-    pub fn get_point(&self, c: Coords) -> Option<&Point> {
-        self.points.get(&c)
+    pub fn get_point(&self, c: Coords) -> Option<Point> {
+        self.points.get(&c).map(|p| *p)
     }
 
     pub fn set_point(&mut self, c: Coords, p: Point) {
         self.points.insert(c, p);
+    }
+
+    pub fn set_point_option(&mut self, c: Coords, p: Option<Point>) {
+        match p {
+            Some(x) => self.set_point(c, x),
+            None => self.remove_point(c)
+        }
     }
 
     pub fn remove_point(&mut self, c: Coords) {
@@ -85,12 +92,19 @@ impl Grid {
         self.points.iter()
     }
 
-    pub fn get_edge(&self, c: Coords, d: Dir) -> Option<&Edge> {
-        self.edges.get(c, d)
+    pub fn get_edge(&self, c: Coords, d: Dir) -> Option<Edge> {
+        self.edges.get(c, d).map(|e| *e)
     }
 
     pub fn set_edge(&mut self, c: Coords, d: Dir, t: Edge) {
         self.edges.set(c, d, t);
+    }
+
+    pub fn set_edge_option(&mut self, c: Coords, d: Dir, t: Option<Edge>) {
+        match t {
+            Some(x) => self.set_edge(c, d, x),
+            None => self.remove_edge(c, d)
+        }
     }
 
     pub fn remove_edge(&mut self, c: Coords, d: Dir) {
