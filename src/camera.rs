@@ -35,6 +35,10 @@ impl Camera {
         p
     }
 
+    pub fn transform_distance(self: &Camera, r: f32) -> f32 {
+        r * self.zoom
+    }
+
     pub fn transform_point(self: &Camera, p: graphics::Point) -> graphics::Point {
         let c = self.transform(Vector2::<f32>::new(p.x, p.y));
 

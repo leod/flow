@@ -5,7 +5,8 @@ use ggez::graphics;
 
 use input::{self, Input};
 use camera::Camera;
-use grid;
+use grid::{self, Grid};
+use circuit::Circuit;
 
 pub struct Hud {
     mouse_x: i32,
@@ -13,6 +14,15 @@ pub struct Hud {
     grid_coords: grid::Coords,
 
     font: graphics::Font,
+}
+
+fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> grid::Coords {
+    let mouse_p_t = Vector2::new(x as f32, y as f32);
+    let mouse_p = camera.untransform(mouse_p_t);
+    let g_x = mouse_p.x.round() as isize;
+    let g_y = mouse_p.y.round() as isize;
+
+    grid::Coords::new(g_x, g_y)
 }
 
 impl Hud {
@@ -28,33 +38,52 @@ impl Hud {
         Ok(h)
     }
 
-	pub fn input_event(&mut self, input: &Input) {
+	pub fn input_event(
+        &mut self,
+        circuit: &mut Circuit,
+        camera: &Camera,
+        input: &Input
+    ) {
         match input {
             &Input::MouseMotion { state: _, x, y, xrel: _, yrel: _ } => {
                 self.mouse_x = x;
                 self.mouse_y = y;
             }
+            &Input::MouseButtonDown { button, x, y } => {
+                match button {
+                    input::MouseButton::Left => {
+                        let grid_coords = screen_to_grid_coords(camera, x, y);
+                        circuit.grid.set_point(grid_coords, grid::Point::Node);
+                    }
+                    input::MouseButton::Right => {
+                        let grid_coords = screen_to_grid_coords(camera, x, y);
+                        circuit.grid.remove_point(grid_coords);
+                    }
+                    _ => {}
+                }
+            }
             _ => {}
         }
     }		
 
-    pub fn update(&mut self, _ctx: &mut Context, camera: &Camera, dt_s: f32) {
-        let mouse_p_t = Vector2::new(self.mouse_x as f32, self.mouse_y as f32);
-        let mouse_p = camera.untransform(mouse_p_t);
-        let g_x = mouse_p.x.round() as isize;
-        let g_y = mouse_p.y.round() as isize;
-        
-        self.grid_coords = grid::Coords::new(g_x, g_y);
+    pub fn update(&mut self, _ctx: &mut Context, camera: &Camera, _dt_s: f32) {
+        self.grid_coords = screen_to_grid_coords(camera,
+                                                 self.mouse_x,
+                                                 self.mouse_y);
     }
 
-    pub fn draw(&mut self, ctx: &mut Context, camera: &Camera) -> GameResult<()> {
+    pub fn draw(
+        &mut self,
+        ctx: &mut Context,
+        camera: &Camera
+    ) -> GameResult<()> {
         let grid_coords_t = camera.transform(self.grid_coords.cast());
 
         let r = graphics::Rect {
             x: grid_coords_t.x,
             y: grid_coords_t.y,
-            w: 3.0,
-            h: 3.0
+            w: camera.transform_distance(0.2),
+            h: camera.transform_distance(0.2)
         };
 
         graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;

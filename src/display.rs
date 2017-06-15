@@ -18,8 +18,12 @@ impl Display {
         }
     }
 
-    pub fn draw_grid_edges(self: &Display, ctx: &mut Context, camera: &Camera,
-                           grid: &Grid) -> GameResult<()> {
+    pub fn draw_grid_edges(
+        self: &Display,
+        ctx: &mut Context,
+        camera: &Camera,
+        grid: &Grid
+    ) -> GameResult<()> {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
         for (&(c, dir), &edge) in grid.iter_edges() {
@@ -45,6 +49,30 @@ impl Display {
 
             graphics::line(ctx,
                 &vec![camera.transform_point(start), camera.transform_point(end)])?;
+        }
+
+        Ok(())
+    }
+
+    pub fn draw_grid_points(
+        self: &Display,
+        ctx: &mut Context,
+        camera: &Camera,
+        grid: &Grid
+    ) -> GameResult<()> {
+        graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
+
+        for (&c, &point) in grid.iter_points() {
+            let p_t = camera.transform(c.cast() * self.edge_length);
+
+            let r = graphics::Rect {
+                x: p_t.x,
+                y: p_t.y,
+                w: camera.transform_distance(0.5),
+                h: camera.transform_distance(0.5)
+            };
+
+            graphics::rectangle(ctx, graphics::DrawMode::Line, r);
         }
 
         Ok(())
