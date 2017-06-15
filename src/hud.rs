@@ -80,6 +80,12 @@ impl Hud {
         self.redo.clear();
     }
 
+    fn try_perform_action(&mut self, circuit: &mut Circuit, action: Action) {
+        if let Some(undo_action) = action.try_perform(circuit) {
+            self.push_undo(undo_action);
+        }
+    }
+
     fn leave_state(&mut self) {
         let undo_action = match self.state {
             State::Initial => None,
@@ -185,9 +191,7 @@ impl Hud {
                     }
                     input::MouseButton::Right => {
                         let action = Action::RemoveComponentAtPos(grid_coords);
-                        if let Some(undo_action) = action.try_perform(circuit) {
-                            self.push_undo(undo_action);
-                        }
+                        self.try_perform_action(circuit, action);
                     }
                     _ => {}
                 }
@@ -207,10 +211,7 @@ impl Hud {
                     rotation: rotation
                 };
                 let action = Action::PlaceComponent(component);
-
-                if let Some(undo_action) = action.try_perform(circuit) {
-                    self.push_undo(undo_action);
-                }
+                self.try_perform_action(circuit, action);
             }
         }
     }

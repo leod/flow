@@ -29,7 +29,7 @@ pub enum Axis {
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub struct Rect {
-    pub pos: Coords,
+    pub pos: Coords, // top left pos
     pub size: Coords
 }
 
