@@ -25,7 +25,6 @@ use ggez::graphics;
 use types::Dir;
 use circuit::Circuit;
 use display::Display;
-use grid::Grid;
 use hud::Hud;
 use camera::Camera;
 use camera_input::CameraInput;
@@ -47,7 +46,7 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         graphics::set_background_color(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
         let s = MainState {
-            circuit: Circuit::new(Grid::new(), HashMap::new()),
+            circuit: Circuit::empty(),
             frames: 0,
             hud: Hud::new(ctx)?,
             display: Display::new(),
@@ -78,8 +77,8 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        self.display.draw_grid_edges(ctx, &self.camera, &self.circuit.grid)?;
-        self.display.draw_grid_points(ctx, &self.camera, &self.circuit.grid)?;
+        self.display.draw_grid_edges(ctx, &self.camera, &self.circuit)?;
+        self.display.draw_grid_points(ctx, &self.camera, &self.circuit)?;
         self.hud.draw(ctx, &self.camera)?;
 
         graphics::present(ctx);

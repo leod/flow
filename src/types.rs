@@ -1,8 +1,10 @@
+use std::cmp;
+
 use cgmath;
 
 pub type Coords = cgmath::Vector2<isize>;
 
-pub type ComponentId = u32;
+pub type ComponentId = usize;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum Dir {
@@ -117,7 +119,12 @@ impl Axis {
 }
 
 impl Rect {
-    pub fn new(pos: Coords, size: Coords) -> Rect {
+    pub fn from_coords(a: Coords, b: Coords) -> Rect {
+        let pos = Coords::new(cmp::min(a.x, b.x),
+                              cmp::min(a.y, b.y));
+        let d = a.cast::<isize>() - b.cast();
+        let size = Coords::new(d.x.abs(), d.y.abs());
+
         Rect {
             pos: pos,
             size: size
@@ -129,6 +136,21 @@ impl Rect {
         RectIter {
             rect: *self,
             cur: Coords::new(0, 0)
+        }
+    }
+
+    pub fn rotate(&self) -> Rect {
+        Rect {
+            pos: self.pos,
+            size: Coords::new(self.size.y, self.size.x)
+        }
+    }
+
+    pub fn rotate_n(&self, n: usize) -> Rect {
+        if n % 2 == 0 {
+            *self
+        }  else {
+            self.rotate()
         }
     }
 }
