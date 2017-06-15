@@ -69,7 +69,7 @@ impl event::EventHandler for MainState {
         let dt_s = dt.as_fractional_secs() as f32;
 
         self.camera_input.update(&mut self.camera, dt_s);
-        self.hud.update(ctx, &self.camera, dt_s);
+        self.hud.update(ctx, &mut self.circuit, &self.camera, dt_s);
 
         Ok(())
     }

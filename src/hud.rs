@@ -7,7 +7,7 @@ use cgmath::Vector2;
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use types::Dir;
+use types::{Dir, Axis};
 use input::{self, Input};
 use camera::Camera;
 use grid::{self, Grid};
@@ -17,7 +17,8 @@ use display;
 enum State {
     Initial,
     Drawing {
-        last_grid_coords: grid::Coords 
+        last_grid_coords: grid::Coords,
+        axis_lock: Option<Axis>
     }
 }
 
@@ -28,6 +29,8 @@ pub struct Hud {
 
     mouse_x: i32,
     mouse_y: i32,
+    hold_control: bool,
+
     grid_coords: grid::Coords,
 }
 
@@ -49,6 +52,7 @@ impl Hud {
             state: State::Initial,
             mouse_x: ctx.conf.window_width as i32 / 2,
             mouse_y: ctx.conf.window_height as i32 / 2,
+            hold_control: false,
             grid_coords: grid::Coords::new(0, 0),
         };
         Ok(h)
@@ -73,6 +77,22 @@ impl Hud {
             &Input::MouseButtonUp { button, x, y } => {
                 self.mouse_button_up_event(circuit, camera, button, x, y);
             }
+            &Input::KeyDown { keycode, keymod: _, repeat: _ } => {
+                match keycode {
+                    input::Keycode::LCtrl => {
+                        self.hold_control = true;
+                    }
+                    _ => {}
+                }
+            }
+            &Input::KeyUp { keycode, keymod: _, repeat: _ } => {
+                match keycode {
+                    input::Keycode::LCtrl => {
+                        self.hold_control = false;
+                    }
+                    _ => {}
+                }
+            }
             _ => {}
         }
     }
@@ -84,50 +104,6 @@ impl Hud {
         mouse_x: i32,
         mouse_y: i32
     ) {
-        match self.state {
-            State::Initial => {}
-            State::Drawing { last_grid_coords } => {
-                let grid_coords = screen_to_grid_coords(camera,
-                                                        mouse_x,
-                                                        mouse_y);
-
-                if grid_coords != last_grid_coords {
-                    // We might have jumped more than one grid point.
-                    // In this case, draw two lines to get there
-                    let min_x = cmp::min(grid_coords.x, last_grid_coords.x);
-                    let max_x = cmp::max(grid_coords.x, last_grid_coords.x);
-                    let min_y = cmp::min(grid_coords.y, last_grid_coords.y);
-                    let max_y = cmp::max(grid_coords.y, last_grid_coords.y);
-
-                    let line_v = (min_x..max_x+1).zip(once(min_y).cycle());
-                    let line_h = once(max_x).cycle().zip(min_y..max_y+1);
-                    let lines = line_v.chain(line_h);
-
-                    let mut prev_c = last_grid_coords;
-                    for (x, y) in lines {
-                        let c = grid::Coords::new(x, y);
-
-                        if c != prev_c {
-                            if circuit.grid.get_point(c).is_none() {
-                                circuit.grid.set_point(c, grid::Point::Node);
-                            }
-
-                            let dir = Dir::from_coords(prev_c, c);
-                            let edge = grid::Edge {
-                                layer: grid::Layer::Ground
-                            };
-                            circuit.grid.set_edge(prev_c, dir, edge);
-                        }
-
-                        prev_c = c;
-                    }
-
-                    self.state = State::Drawing {
-                        last_grid_coords: grid_coords
-                    };
-                }
-            }
-        }
     }
 
     fn mouse_button_down_event(
@@ -146,7 +122,8 @@ impl Hud {
                         circuit.grid.set_point(grid_coords, grid::Point::Node);
 
                         self.state = State::Drawing {
-                            last_grid_coords: grid_coords
+                            last_grid_coords: grid_coords,
+                            axis_lock: None
                         };
                     }
                     input::MouseButton::Right => {
@@ -188,10 +165,78 @@ impl Hud {
         }
     }
 
-    pub fn update(&mut self, _ctx: &mut Context, camera: &Camera, _dt_s: f32) {
+    pub fn update(
+        &mut self,
+        _ctx: &mut Context,
+        circuit: &mut Circuit,
+        camera: &Camera,
+        _dt_s: f32
+    ) {
         self.grid_coords = screen_to_grid_coords(camera,
                                                  self.mouse_x,
                                                  self.mouse_y);
+        match self.state {
+            State::Initial => {}
+            State::Drawing { last_grid_coords, axis_lock } => {
+                let mut new_axis_lock = if !self.hold_control {
+                    None
+                } else {
+                    axis_lock
+                };
+
+                let locked_coords = match new_axis_lock {
+                    Some(Axis::Horizontal) =>
+                        grid::Coords::new(self.grid_coords.x, last_grid_coords.y),
+                    Some(Axis::Vertical) =>
+                        grid::Coords::new(last_grid_coords.x, self.grid_coords.y),
+                    None =>
+                        self.grid_coords 
+                };
+
+                if locked_coords != last_grid_coords {
+                    // We might have jumped more than one grid point.
+                    // In this case, draw two lines to get there
+                    let min_x = cmp::min(locked_coords.x, last_grid_coords.x);
+                    let max_x = cmp::max(locked_coords.x, last_grid_coords.x);
+                    let min_y = cmp::min(locked_coords.y, last_grid_coords.y);
+                    let max_y = cmp::max(locked_coords.y, last_grid_coords.y);
+
+                    let line_v = (min_x..max_x+1).zip(once(min_y).cycle());
+                    let line_h = once(max_x).cycle().zip(min_y..max_y+1);
+                    let lines = line_v.chain(line_h);
+
+                    let mut prev_c = None;
+                    for (x, y) in lines {
+                        let c = grid::Coords::new(x, y);
+
+                        if prev_c.is_none() || Some(c) != prev_c {
+                            if circuit.grid.get_point(c).is_none() {
+                                circuit.grid.set_point(c, grid::Point::Node);
+                            }
+
+                            if let Some(p) = prev_c {
+                                let dir = Dir::from_coords(p, c);
+                                let edge = grid::Edge {
+                                    layer: grid::Layer::Ground
+                                };
+                                circuit.grid.set_edge(p, dir, edge);
+
+                                if self.hold_control && new_axis_lock.is_none() {
+                                    new_axis_lock = Some(dir.to_axis());
+                                }
+                            }
+                        }
+
+                        prev_c = Some(c);
+                    }
+                }
+
+                self.state = State::Drawing {
+                    last_grid_coords: locked_coords,
+                    axis_lock: new_axis_lock
+                };
+            }
+        }
     }
 
     pub fn draw(
