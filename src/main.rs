@@ -36,7 +36,7 @@ struct MainState {
 
     frames: usize,
 
-	hud: Hud,
+    hud: Hud,
     display: Display,
 
     camera: Camera,
