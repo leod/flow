@@ -1,6 +1,5 @@
 use std::cmp;
 use std::iter::{once, Iterator};
-use std::io::{self, Write};
 
 use cgmath::Vector2;
 
@@ -148,10 +147,10 @@ impl Hud {
 
     fn mouse_motion_event(
         &mut self,
-        circuit: &mut Circuit,
-        camera: &Camera,
-        mouse_x: i32,
-        mouse_y: i32
+        _circuit: &mut Circuit,
+        _camera: &Camera,
+        _mouse_x: i32,
+        _mouse_y: i32
     ) {
     }
 
@@ -205,7 +204,7 @@ impl Hud {
                 let component = Component {
                     top_left_pos: grid_coords,
                     element: element,
-                    rotation: 0
+                    rotation: rotation
                 };
                 let action = Action::PlaceComponent(component);
 
@@ -218,8 +217,8 @@ impl Hud {
 
     fn mouse_button_up_event(
         &mut self,
-        circuit: &mut Circuit,
-        camera: &Camera,
+        _circuit: &mut Circuit,
+        _camera: &Camera,
         button: input::MouseButton,
         _x: i32,
         _y: i32
@@ -241,7 +240,7 @@ impl Hud {
     fn key_down_event(
         &mut self,
         circuit: &mut Circuit,
-        camera: &Camera,
+        _camera: &Camera,
         keycode: input::Keycode,
     ) {
         match self.state {

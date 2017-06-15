@@ -13,7 +13,6 @@ mod camera_input;
 mod input;
 
 use std::time::Duration;
-use std::collections::HashMap;
 
 use floating_duration::TimeAsFloat;
 
@@ -22,7 +21,6 @@ use ggez::event::{self, MouseButton, MouseState, Keycode, Mod};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use types::Dir;
 use circuit::Circuit;
 use display::Display;
 use hud::Hud;
@@ -78,7 +76,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
 
         self.display.draw_grid_edges(ctx, &self.camera, &self.circuit)?;
-        self.display.draw_grid_points(ctx, &self.camera, &self.circuit)?;
+        self.display.draw_components(ctx, &self.camera, &self.circuit)?;
         self.hud.draw(ctx, &self.camera)?;
 
         graphics::present(ctx);

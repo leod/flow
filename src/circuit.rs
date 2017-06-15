@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use types::Dir;
 use types::Rect;
 use grid::{Coords, Point, Edge, EdgeMap};
-use component::{self, ComponentId, Element, Component};
+use component::{ComponentId, Component};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Action {
@@ -74,7 +74,7 @@ impl Action {
             &Action::RemoveComponentAtPos(pos) => {
                 circuit.points.get(&pos).is_some()
             }
-            &Action::PlaceEdge(pos, dir, edge) => {
+            &Action::PlaceEdge(pos, dir, _edge) => {
                 // Check that we are not trying to place an edge in the middle
                 // of a component
                 let in_component = 
