@@ -5,8 +5,9 @@ pub use types::Coords;
 use types::{ComponentId, Dir, PosDir};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub struct Point {
-    pub component: ComponentId
+pub enum Point {
+    Node,
+    Component(ComponentId)
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
@@ -45,6 +46,10 @@ impl<T: Clone + Debug> EdgeMap<T> {
         self.0.get(&canonize_edge(c, d))
     }
 
+    pub fn remove(&mut self, c: Coords, d: Dir)  {
+        self.0.remove(&canonize_edge(c, d));
+    }
+
     pub fn iter(&self) -> hash_map::Iter<(Coords, PosDir), T> {
         self.0.iter()
     }
@@ -64,24 +69,32 @@ impl Grid {
         };
     }
 
-    pub fn get_point(self: &Grid, c: Coords) -> Option<&Point> {
+    pub fn get_point(&self, c: Coords) -> Option<&Point> {
         self.points.get(&c)
     }
 
-    pub fn set_point(self: &mut Grid, c: Coords, p: Point) {
+    pub fn set_point(&mut self, c: Coords, p: Point) {
         self.points.insert(c, p);
     }
 
-    pub fn iter_points(self: &Grid) -> hash_map::Iter<Coords, Point> {
+    pub fn remove_point(&mut self, c: Coords) {
+        self.points.remove(&c);
+    }
+
+    pub fn iter_points(&self) -> hash_map::Iter<Coords, Point> {
         self.points.iter()
     }
 
-    pub fn get_edge(self: &Grid, c: Coords, d: Dir) -> Option<&Edge> {
+    pub fn get_edge(&self, c: Coords, d: Dir) -> Option<&Edge> {
         self.edges.get(c, d)
     }
 
-    pub fn set_edge(self: &mut Grid, c: Coords, d: Dir, t: Edge) {
+    pub fn set_edge(&mut self, c: Coords, d: Dir, t: Edge) {
         self.edges.set(c, d, t);
+    }
+
+    pub fn remove_edge(&mut self, c: Coords, d: Dir) {
+        self.edges.remove(c, d);
     }
 
     pub fn iter_edges(&self) -> hash_map::Iter<(Coords, PosDir), Edge> {

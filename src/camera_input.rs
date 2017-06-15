@@ -16,7 +16,7 @@ impl CameraInput {
     pub fn new(scroll_speed: f32) -> CameraInput {
         CameraInput {
             min_zoom: 1.0,
-            max_zoom: 20.0,
+            max_zoom: 100.0,
             scroll_speed: scroll_speed,
             zoom_speed: 1.0,
             delta: Vector2::new(0.0, 0.0),

@@ -50,7 +50,7 @@ impl MainState {
             frames: 0,
             hud: Hud::new(ctx)?,
             display: Display::new(),
-            camera: Camera::new(ctx.conf.window_width, ctx.conf.window_height, 10.0),
+            camera: Camera::new(ctx.conf.window_width, ctx.conf.window_height, 50.0),
             camera_input: CameraInput::new(10.0)
         };
         Ok(s)
@@ -59,7 +59,7 @@ impl MainState {
 
 impl MainState {
     fn input_event(&mut self, input: &Input) {
-        self.hud.input_event(input);
+        self.hud.input_event(&mut self.circuit, &self.camera, input);
         self.camera_input.input_event(&mut self.camera, input);
     }
 }
@@ -78,6 +78,7 @@ impl event::EventHandler for MainState {
         graphics::clear(ctx);
 
         self.display.draw_grid_edges(ctx, &self.camera, &self.circuit.grid)?;
+        self.display.draw_grid_points(ctx, &self.camera, &self.circuit.grid)?;
         self.hud.draw(ctx, &self.camera)?;
 
         graphics::present(ctx);
@@ -153,7 +154,7 @@ pub fn main() {
 
     let state = &mut MainState::new(ctx).unwrap();
 
-    for x in 0..100 {
+    /*for x in 0..100 {
         for y in 0..100 {
             if x % 2 == 0 && y % 3 == 0 {
                 state.circuit.grid.set_edge(grid::Coords::new(x, y), Dir::Right,
@@ -165,7 +166,7 @@ pub fn main() {
                     grid::Edge { layer: grid::Layer::Ground });
             }
         }
-    }
+    }*/
 
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);
