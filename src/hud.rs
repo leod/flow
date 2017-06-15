@@ -205,13 +205,25 @@ impl Hud {
                 }
             }
             State::PlaceElement { element, rotation } => {
-                let component = Component {
-                    top_left_pos: grid_coords,
-                    element: element,
-                    rotation: rotation
-                };
-                let action = Action::PlaceComponent(component);
-                self.try_perform_action(circuit, action);
+                match button {
+                    input::MouseButton::Left => {
+                        // Use cursor pos as center if possible
+                        let c = grid_coords - element.descr().size / 2;
+
+                        let component = Component {
+                            top_left_pos: c,
+                            element: element,
+                            rotation: rotation
+                        };
+                        let action = Action::PlaceComponent(component);
+                        self.try_perform_action(circuit, action);
+                    }
+                    input::MouseButton::Right => {
+                        let action = Action::RemoveComponentAtPos(grid_coords);
+                        self.try_perform_action(circuit, action);
+                    }
+                    _ =>  {}
+                }
             }
         }
     }
@@ -303,6 +315,7 @@ impl Hud {
                 if locked_coords != *last_grid_coords {
                     // We might have jumped more than one grid point.
                     // In this case, draw two lines to get there
+                    // FIXME: Wrong lines being drawn
                     let min_x = cmp::min(locked_coords.x, last_grid_coords.x);
                     let max_x = cmp::max(locked_coords.x, last_grid_coords.x);
                     let min_y = cmp::min(locked_coords.y, last_grid_coords.y);
@@ -374,7 +387,16 @@ impl Hud {
 
         let state_str = format!("{:?}", self.state);
         let state_text = graphics::Text::new(ctx, &state_str, &self.font)?;
-        state_text.draw(ctx, graphics::Point::new(10.0 + state_text.width() as f32 / 2.0, 10.0), 0.0)?;
+        let state_text_pos = graphics::Point::new(
+            10.0 + state_text.width() as f32 / 2.0, 10.0);
+        state_text.draw(ctx, state_text_pos, 0.0)?;
+
+        let coords_str = format!("({}, {})", self.grid_coords.x,
+                                 self.grid_coords.y);
+        let coords_text = graphics::Text::new(ctx, &coords_str, &self.font)?;
+        let coords_text_pos = graphics::Point::new(
+            10.0 + coords_text.width() as f32 / 2.0, 30.0);
+        coords_text.draw(ctx, coords_text_pos, 0.0)?;
 
         Ok(())
     }

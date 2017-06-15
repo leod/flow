@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use types::Dir;
-use types::Rect;
 use grid::{Coords, Point, Edge, EdgeMap};
 use component::{ComponentId, Component};
 
@@ -110,6 +109,7 @@ impl Action {
                 let point = Point(component_id);
                 for c in component.rect().iter() {
                     circuit.points.insert(c, point);
+                    println!("mark {:?}", c);
                 }
 
                 Action::RemoveComponent(component_id)
@@ -118,6 +118,10 @@ impl Action {
                 let component = circuit.components
                     .get(&component_id).unwrap().clone();
                 circuit.components.remove(&component_id); 
+
+                for c in component.rect().iter() {
+                    circuit.points.remove(&c);
+                }
 
                 Action::PlaceComponent(component.clone())
             }

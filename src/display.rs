@@ -1,3 +1,5 @@
+use cgmath::Vector2;
+
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
@@ -7,6 +9,7 @@ use camera::Camera;
 use component::Element;
 
 pub const EDGE_LENGTH: f32 = 1.5;
+pub const HALF_EDGE_LENGTH: f32 = EDGE_LENGTH / 2.0;
 
 pub struct Display {
 }
@@ -61,7 +64,21 @@ impl Display {
                     graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
                 }
                 Element::Source => {
-                    //c.element.descr().size;
+                    let size = (c.rect().size.cast() - Vector2::new(0.5, 0.5))
+                        * EDGE_LENGTH;
+                    let shift = (c.rect().size.cast() - Vector2::new(1.0, 1.0))
+                        * HALF_EDGE_LENGTH;
+                    let trans_size = camera.transform_delta(size);
+                    let trans_shift = camera.transform_delta(shift);
+
+                    let r = graphics::Rect {
+                        x: p_t.x + trans_shift.x,
+                        y: p_t.y + trans_shift.y,
+                        w: trans_size.x,
+                        h: trans_size.y
+                    };
+                    
+                    graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
                 }
                 _ => {}
             }
