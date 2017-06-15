@@ -1,5 +1,5 @@
 use std::cmp;
-use std::iter::once;
+use std::iter::{once, Iterator};
 use std::io::{self, Write};
 
 use cgmath::Vector2;
@@ -18,18 +18,24 @@ enum State {
     Initial,
     Drawing {
         last_grid_coords: grid::Coords,
-        axis_lock: Option<Axis>
+        axis_lock: Option<Axis>,
+        undo: Vec<Action>
     }
 }
 
+#[derive(PartialEq, Eq, Clone, Debug)]
 enum Action {
-
+    SetPoint(grid::Coords, Option<grid::Point>),
+    SetEdge(grid::Coords, Dir, Option<grid::Edge>),
+    Compound(Vec<Action>)
 }
 
 pub struct Hud {
     font: graphics::Font,
 
     state: State,
+    undo: Vec<Action>,
+    redo: Vec<Action>,
 
     mouse_x: i32,
     mouse_y: i32,
@@ -47,6 +53,32 @@ fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> grid::Coords {
     grid::Coords::new(g_x, g_y)
 }
 
+impl Action {
+    fn perform(self, circuit: &mut Circuit) -> Action {
+        match self {
+            Action::SetPoint(c, p_new) => {
+                let p = circuit.grid.get_point(c);
+                let undo = Action::SetPoint(c, p);
+                circuit.grid.set_point_option(c, p_new);
+                undo
+            }
+            Action::SetEdge(c, dir, e_new) => {
+                let e =  circuit.grid.get_edge(c, dir);
+                let undo = Action::SetEdge(c, dir, e);
+                circuit.grid.set_edge_option(c, dir, e_new);
+                undo
+            }
+            Action::Compound(actions) => {
+                let mut undo = actions.into_iter()
+                                      .map(|action| { action.perform(circuit) })
+                                      .collect::<Vec<_>>();
+                undo.reverse();
+                Action::Compound(undo) 
+            }
+        }
+    }
+}
+
 impl Hud {
     pub fn new(ctx: &mut Context) -> GameResult<Hud> {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
@@ -54,12 +86,40 @@ impl Hud {
         let h = Hud {
             font: font,
             state: State::Initial,
+            undo: Vec::new(),
+            redo: Vec::new(),
             mouse_x: ctx.conf.window_width as i32 / 2,
             mouse_y: ctx.conf.window_height as i32 / 2,
             hold_control: false,
             grid_coords: grid::Coords::new(0, 0),
         };
         Ok(h)
+    }
+
+    fn change_state(&mut self, new_state: State) {
+        self.leave_state();
+        self.state = new_state;
+    }
+
+    fn push_undo(&mut self, undo_action: Action) {
+        self.undo.push(undo_action);
+
+        // After a user action is performed, clear redo
+        self.redo.clear();
+    }
+
+    fn leave_state(&mut self) {
+        let undo_action = match self.state {
+            State::Initial => None,
+            State::Drawing { ref mut undo, .. } => {
+                undo.reverse();
+                Some(Action::Compound(undo.clone()))
+            }
+        };
+
+        if let Some(u) = undo_action {
+            self.push_undo(u);
+        }
     }
 
 	pub fn input_event(
@@ -85,6 +145,22 @@ impl Hud {
                 match keycode {
                     input::Keycode::LCtrl => {
                         self.hold_control = true;
+                    }
+                    input::Keycode::Z => {
+                        if self.hold_control == true {
+                            if let Some(undo_action) = self.undo.pop() {
+                                let redo_action = undo_action.perform(circuit);
+                                self.redo.push(redo_action);
+                            }
+                        }
+                    }
+                    input::Keycode::Y => {
+                        if self.hold_control == true {
+                            if let Some(redo_action) = self.redo.pop() {
+                                let undo_action = redo_action.perform(circuit);
+                                self.undo.push(undo_action);
+                            }
+                        }
                     }
                     _ => {}
                 }
@@ -118,21 +194,27 @@ impl Hud {
         x: i32,
         y: i32
     ) {
+        let grid_coords = screen_to_grid_coords(camera, x, y);
+
         match self.state {
             State::Initial => {
                 match button {
                     input::MouseButton::Left => {
-                        let grid_coords = screen_to_grid_coords(camera, x, y);
-                        circuit.grid.set_point(grid_coords, grid::Point::Node);
+                        let action = Action::SetPoint(grid_coords,
+                                                      Some(grid::Point::Node));
+                        let undo_action = action.perform(circuit);
 
-                        self.state = State::Drawing {
+                        let new_state = State::Drawing {
                             last_grid_coords: grid_coords,
-                            axis_lock: None
+                            axis_lock: None,
+                            undo: vec![undo_action]
                         };
+                        self.change_state(new_state);
                     }
                     input::MouseButton::Right => {
-                        let grid_coords = screen_to_grid_coords(camera, x, y);
-                        circuit.grid.remove_point(grid_coords);
+                        let action = Action::SetPoint(grid_coords, None);
+                        let undo_action = action.perform(circuit);
+                        self.push_undo(undo_action);
                     }
                     _ => {}
                 }
@@ -140,7 +222,7 @@ impl Hud {
             State::Drawing { .. }  => {
                 match button {
                     input::MouseButton::Right => {
-                        self.state = State::Initial;
+                        self.change_state(State::Initial);
                     }
                     _ => {}
                 }
@@ -161,7 +243,7 @@ impl Hud {
             State::Drawing { .. }  => {
                 match button {
                     input::MouseButton::Left => {
-                        self.state = State::Initial;
+                        self.change_state(State::Initial);
                     }
                     _ => {}
                 }
@@ -181,14 +263,12 @@ impl Hud {
                                                  self.mouse_y);
         match self.state {
             State::Initial => {}
-            State::Drawing { last_grid_coords, axis_lock } => {
-                let mut new_axis_lock = if !self.hold_control {
-                    None
-                } else {
-                    axis_lock
-                };
+            State::Drawing { ref mut last_grid_coords, ref mut axis_lock, ref mut undo } => {
+                if !self.hold_control {
+                    *axis_lock = None;
+                }
 
-                let locked_coords = match new_axis_lock {
+                let locked_coords = match *axis_lock {
                     Some(Axis::Horizontal) =>
                         grid::Coords::new(self.grid_coords.x, last_grid_coords.y),
                     Some(Axis::Vertical) =>
@@ -197,7 +277,7 @@ impl Hud {
                         self.grid_coords 
                 };
 
-                if locked_coords != last_grid_coords {
+                if locked_coords != *last_grid_coords {
                     // We might have jumped more than one grid point.
                     // In this case, draw two lines to get there
                     let min_x = cmp::min(locked_coords.x, last_grid_coords.x);
@@ -215,7 +295,10 @@ impl Hud {
 
                         if prev_c.is_none() || Some(c) != prev_c {
                             if circuit.grid.get_point(c).is_none() {
-                                circuit.grid.set_point(c, grid::Point::Node);
+                                let action =
+                                    Action::SetPoint(c, Some(grid::Point::Node));
+                                let undo_action = action.perform(circuit);
+                                undo.push(undo_action);
                             }
 
                             if let Some(p) = prev_c {
@@ -223,10 +306,13 @@ impl Hud {
                                 let edge = grid::Edge {
                                     layer: grid::Layer::Ground
                                 };
-                                circuit.grid.set_edge(p, dir, edge);
 
-                                if self.hold_control && new_axis_lock.is_none() {
-                                    new_axis_lock = Some(dir.to_axis());
+                                let action = Action::SetEdge(p, dir, Some(edge));
+                                let undo_action = action.perform(circuit);
+                                undo.push(undo_action);
+
+                                if self.hold_control && axis_lock.is_none() {
+                                    *axis_lock = Some(dir.to_axis());
                                 }
                             }
                         }
@@ -235,10 +321,7 @@ impl Hud {
                     }
                 }
 
-                self.state = State::Drawing {
-                    last_grid_coords: locked_coords,
-                    axis_lock: new_axis_lock
-                };
+                *last_grid_coords = locked_coords;
             }
         }
     }
