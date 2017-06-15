@@ -5,22 +5,25 @@ use std::io::{self, Write};
 use cgmath::Vector2;
 
 use ggez::{GameResult, Context};
-use ggez::graphics;
+use ggez::graphics::{self, Drawable};
 
 use types::{Dir, Axis};
 use input::{self, Input};
 use camera::Camera;
 use grid::{self, Grid};
+use component::{Component, Element};
 use circuit::Circuit;
 use display;
 
+#[derive(PartialEq, Eq, Clone, Debug)]
 enum State {
     Initial,
     Drawing {
         last_grid_coords: grid::Coords,
         axis_lock: Option<Axis>,
         undo: Vec<Action>
-    }
+    },
+    PlaceComponent(Element)
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -81,7 +84,7 @@ impl Action {
 
 impl Hud {
     pub fn new(ctx: &mut Context) -> GameResult<Hud> {
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
+        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 10)?;
 
         let h = Hud {
             font: font,
@@ -114,7 +117,8 @@ impl Hud {
             State::Drawing { ref mut undo, .. } => {
                 undo.reverse();
                 Some(Action::Compound(undo.clone()))
-            }
+            },
+            State::PlaceComponent(_) => None,
         };
 
         if let Some(u) = undo_action {
@@ -162,6 +166,12 @@ impl Hud {
                             }
                         }
                     }
+                    input::Keycode::Num1 => {
+                        self.change_state(State::Initial);
+                    }
+                    input::Keycode::Num2 => {
+                        self.change_state(State::PlaceComponent(Element::Source));
+                    }
                     _ => {}
                 }
             }
@@ -202,12 +212,18 @@ impl Hud {
                     input::MouseButton::Left => {
                         let action = Action::SetPoint(grid_coords,
                                                       Some(grid::Point::Node));
-                        let undo_action = action.perform(circuit);
+                        let undo =
+                            if circuit.grid.get_point(grid_coords).is_none() {
+                                let undo_action = action.perform(circuit);
+                                vec![undo_action]
+                            } else {
+                                vec![]
+                            };
 
                         let new_state = State::Drawing {
                             last_grid_coords: grid_coords,
                             axis_lock: None,
-                            undo: vec![undo_action]
+                            undo: undo
                         };
                         self.change_state(new_state);
                     }
@@ -226,6 +242,9 @@ impl Hud {
                     }
                     _ => {}
                 }
+            }
+            State::PlaceComponent(element) => {
+                
             }
         }
     }
@@ -247,7 +266,8 @@ impl Hud {
                     }
                     _ => {}
                 }
-            }
+            },
+            State::PlaceComponent(_) => {}
         }
     }
 
@@ -327,6 +347,7 @@ impl Hud {
 
                 *last_grid_coords = locked_coords;
             }
+            State::PlaceComponent(_) => {}
         }
     }
 
@@ -347,6 +368,10 @@ impl Hud {
 
         graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
         graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
+
+        let state_str = format!("{:?}", self.state);
+        let state_text = graphics::Text::new(ctx, &state_str, &self.font)?;
+        state_text.draw(ctx, graphics::Point::new(10.0 + state_text.width() as f32 / 2.0, 10.0), 0.0)?;
 
         Ok(())
     }

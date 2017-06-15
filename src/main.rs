@@ -45,6 +45,7 @@ struct MainState {
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
+        graphics::set_background_color(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
         let s = MainState {
             circuit: Circuit::new(Grid::new(), HashMap::new()),
             frames: 0,

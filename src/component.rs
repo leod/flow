@@ -14,7 +14,7 @@ pub enum SwitchType {
 pub enum Element {
     Switch(SwitchType),
     Capacitor,
-    PowerSource
+    Source
 }
 
 pub type Id = u32;

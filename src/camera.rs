@@ -1,5 +1,4 @@
 use cgmath::Vector2;
-use ggez::graphics;
 
 #[derive(Clone, Debug)]
 pub struct Camera {
