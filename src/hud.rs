@@ -23,7 +23,7 @@ enum State {
         axis_lock: Option<Axis>,
         undo: Vec<Action>
     },
-    PlaceComponent(Element)
+    PlaceElement(Element)
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -118,7 +118,7 @@ impl Hud {
                 undo.reverse();
                 Some(Action::Compound(undo.clone()))
             },
-            State::PlaceComponent(_) => None,
+            State::PlaceElement(_) => None,
         };
 
         if let Some(u) = undo_action {
@@ -170,7 +170,7 @@ impl Hud {
                         self.change_state(State::Initial);
                     }
                     input::Keycode::Num2 => {
-                        self.change_state(State::PlaceComponent(Element::Source));
+                        self.change_state(State::PlaceElement(Element::Source));
                     }
                     _ => {}
                 }
@@ -243,7 +243,7 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::PlaceComponent(element) => {
+            State::PlaceElement(element) => {
                 
             }
         }
@@ -267,7 +267,7 @@ impl Hud {
                     _ => {}
                 }
             },
-            State::PlaceComponent(_) => {}
+            State::PlaceElement(_) => {}
         }
     }
 
@@ -347,7 +347,7 @@ impl Hud {
 
                 *last_grid_coords = locked_coords;
             }
-            State::PlaceComponent(_) => {}
+            State::PlaceElement(_) => {}
         }
     }
 
