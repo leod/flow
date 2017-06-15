@@ -263,16 +263,20 @@ impl Hud {
                                                  self.mouse_y);
         match self.state {
             State::Initial => {}
-            State::Drawing { ref mut last_grid_coords, ref mut axis_lock, ref mut undo } => {
+            State::Drawing { ref mut last_grid_coords,
+                             ref mut axis_lock,
+                             ref mut undo } => {
                 if !self.hold_control {
                     *axis_lock = None;
                 }
 
                 let locked_coords = match *axis_lock {
                     Some(Axis::Horizontal) =>
-                        grid::Coords::new(self.grid_coords.x, last_grid_coords.y),
+                        grid::Coords::new(self.grid_coords.x,
+                                          last_grid_coords.y),
                     Some(Axis::Vertical) =>
-                        grid::Coords::new(last_grid_coords.x, self.grid_coords.y),
+                        grid::Coords::new(last_grid_coords.x,
+                                          self.grid_coords.y),
                     None =>
                         self.grid_coords 
                 };
