@@ -280,6 +280,18 @@ impl Hud {
             }
             _ => {}
         }
+
+        match self.state {
+            State::PlaceElement { ref mut rotation, .. } => {
+                match keycode {
+                    input::Keycode::R => {
+                        *rotation += 1
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
     }
 
     pub fn update(
