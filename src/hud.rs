@@ -9,12 +9,21 @@ use grid::{self, Grid};
 use circuit::Circuit;
 use display;
 
+enum State {
+    Initial,
+    Drawing {
+        last_grid_coords: grid::Coords 
+    }
+}
+
 pub struct Hud {
+    font: graphics::Font,
+
+    state: State,
+
     mouse_x: i32,
     mouse_y: i32,
     grid_coords: grid::Coords,
-
-    font: graphics::Font,
 }
 
 fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> grid::Coords {
@@ -31,10 +40,11 @@ impl Hud {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 48)?;
 
         let h = Hud {
+            font: font,
+            state: State::Initial,
             mouse_x: ctx.conf.window_width as i32 / 2,
             mouse_y: ctx.conf.window_height as i32 / 2,
             grid_coords: grid::Coords::new(0, 0),
-            font: font
         };
         Ok(h)
     }
@@ -49,12 +59,61 @@ impl Hud {
             &Input::MouseMotion { state: _, x, y, xrel: _, yrel: _ } => {
                 self.mouse_x = x;
                 self.mouse_y = y;
+
+                self.mouse_motion_event(circuit, camera, input, x, y);
             }
             &Input::MouseButtonDown { button, x, y } => {
+                self.mouse_button_down_event(circuit, camera, input, button, x, y);
+            }
+            &Input::MouseButtonUp { button, x, y } => {
+                self.mouse_button_up_event(circuit, camera, input, button, x, y);
+            }
+            _ => {}
+        }
+    }
+
+    fn mouse_motion_event(
+        &mut self,
+        circuit: &mut Circuit,
+        camera: &Camera,
+        input: &Input,
+        x: i32,
+        y: i32
+    ) {
+        match self.state {
+            State::Initial => {}
+            State::Drawing { last_grid_coords } => {
+                let grid_coords = screen_to_grid_coords(camera,
+                                                        self.mouse_x,
+                                                        self.mouse_y);
+                if grid_coords != last_grid_coords &&
+                   circuit.grid.get_point(grid_coords).is_none() {
+                    println!("setting {:?}", grid_coords);
+                    circuit.grid.set_point(grid_coords, grid::Point::Node);
+                }
+            }
+        }
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        circuit: &mut Circuit,
+        camera: &Camera,
+        input: &Input,
+        button: input::MouseButton,
+        x: i32,
+        y: i32
+    ) {
+        match self.state {
+            State::Initial => {
                 match button {
                     input::MouseButton::Left => {
                         let grid_coords = screen_to_grid_coords(camera, x, y);
                         circuit.grid.set_point(grid_coords, grid::Point::Node);
+
+                        self.state = State::Drawing {
+                            last_grid_coords: grid_coords
+                        };
                     }
                     input::MouseButton::Right => {
                         let grid_coords = screen_to_grid_coords(camera, x, y);
@@ -63,9 +122,38 @@ impl Hud {
                     _ => {}
                 }
             }
-            _ => {}
+            State::Drawing { .. }  => {
+                match button {
+                    input::MouseButton::Right => {
+                        self.state = State::Initial;
+                    }
+                    _ => {}
+                }
+            }
         }
-    }		
+    }
+
+    fn mouse_button_up_event(
+        &mut self,
+        circuit: &mut Circuit,
+        camera: &Camera,
+        input: &Input,
+        button: input::MouseButton,
+        x: i32,
+        y: i32
+    ) {
+        match self.state {
+            State::Initial => {}
+            State::Drawing { .. }  => {
+                match button {
+                    input::MouseButton::Left => {
+                        self.state = State::Initial;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
 
     pub fn update(&mut self, _ctx: &mut Context, camera: &Camera, _dt_s: f32) {
         self.grid_coords = screen_to_grid_coords(camera,
