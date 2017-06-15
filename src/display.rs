@@ -7,14 +7,14 @@ use types::PosDir;
 use grid::{self, Grid};
 use camera::Camera;
 
+pub const EDGE_LENGTH: f32 = 1.5;
+
 pub struct Display {
-   edge_length: f32 
 }
 
 impl Display {
     pub fn new() -> Display {
         Display {
-            edge_length: 1.0
         }
     }
 
@@ -28,20 +28,20 @@ impl Display {
 
         for (&(c, dir), &edge) in grid.iter_edges() {
             let start = graphics::Point {
-                x: c.x as f32 * self.edge_length,
-                y: c.y as f32 * self.edge_length
+                x: c.x as f32 * EDGE_LENGTH,
+                y: c.y as f32 * EDGE_LENGTH
             };
 
             let end = match dir {
                 PosDir::Right =>
                     graphics::Point {
-                        x: (c.x+1) as f32 * self.edge_length,
-                        y: c.y as f32 * self.edge_length
+                        x: (c.x+1) as f32 * EDGE_LENGTH,
+                        y: c.y as f32 * EDGE_LENGTH
                     },
                 PosDir::Down =>
                     graphics::Point {
-                        x: c.x as f32 * self.edge_length,
-                        y: (c.y+1) as f32 * self.edge_length
+                        x: c.x as f32 * EDGE_LENGTH,
+                        y: (c.y+1) as f32 * EDGE_LENGTH
                     },
                 _ =>
                     panic!("unexpected edge orientation")
@@ -63,13 +63,13 @@ impl Display {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
         for (&c, &point) in grid.iter_points() {
-            let p_t = camera.transform(c.cast() * self.edge_length);
+            let p_t = camera.transform(c.cast() * EDGE_LENGTH);
 
             let r = graphics::Rect {
                 x: p_t.x,
                 y: p_t.y,
-                w: camera.transform_distance(0.5),
-                h: camera.transform_distance(0.5)
+                w: camera.transform_distance(EDGE_LENGTH / 2.0),
+                h: camera.transform_distance(EDGE_LENGTH / 2.0)
             };
 
             graphics::rectangle(ctx, graphics::DrawMode::Line, r);
