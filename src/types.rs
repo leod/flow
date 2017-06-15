@@ -25,6 +25,17 @@ pub enum Axis {
     Vertical
 }
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub struct Rect {
+    pub pos: Coords,
+    pub size: Coords
+}
+
+pub struct RectIter {
+    rect: Rect,
+    cur: Coords
+}
+
 impl Dir {
     pub fn from_coords(a: Coords, b: Coords) -> Dir {
         if b.x == a.x - 1 {
@@ -45,12 +56,20 @@ impl Dir {
     }
 
     pub fn invert(self) -> Dir {
+        self.next_cw().next_cw()
+    }
+
+    pub fn next_cw(self) -> Dir {
         match self {
-            Dir::Left => Dir::Right,
-            Dir::Right => Dir::Left,
-            Dir::Up => Dir::Down,
-            Dir::Down => Dir::Up
+            Dir::Left => Dir::Up,
+            Dir::Up => Dir::Right,
+            Dir::Right => Dir::Down,
+            Dir::Down => Dir::Left
         }
+    }
+
+    pub fn add_cw(self, n: usize) -> Dir {
+        (1..n%4).fold(self, |d, _| d.next_cw())
     }
 
     pub fn apply(self, c: Coords) -> Coords {
@@ -93,6 +112,43 @@ impl Axis {
         match self {
             Axis::Horizontal => Axis::Vertical,
             Axis::Vertical => Axis::Horizontal
+        }
+    }
+}
+
+impl Rect {
+    pub fn new(pos: Coords, size: Coords) -> Rect {
+        Rect {
+            pos: pos,
+            size: size
+        }
+    }
+
+    // Iterate left-to-right, top-to-bottom
+    pub fn iter(&self) -> RectIter {
+        RectIter {
+            rect: *self,
+            cur: Coords::new(0, 0)
+        }
+    }
+}
+
+impl Iterator for RectIter {
+    type Item = Coords;
+
+    fn next(&mut self) -> Option<Coords> {
+        if self.cur.y == self.rect.size.y || self.cur.x == self.rect.size.x {
+            None
+        } else {
+            let p = self.rect.pos + self.cur;
+
+            self.cur.x += 1;
+            if self.cur.x == self.rect.size.x {
+                self.cur.x = 0;
+                self.cur.y += 1;
+            }
+
+            Some(p)
         }
     }
 }
