@@ -58,10 +58,10 @@ impl Dir {
     }
 
     pub fn invert(self) -> Dir {
-        self.next_cw().next_cw()
+        self.rotate_cw().rotate_cw()
     }
 
-    pub fn next_cw(self) -> Dir {
+    pub fn rotate_cw(self) -> Dir {
         match self {
             Dir::Left => Dir::Up,
             Dir::Up => Dir::Right,
@@ -70,8 +70,8 @@ impl Dir {
         }
     }
 
-    pub fn add_cw(self, n: usize) -> Dir {
-        (1..n%4).fold(self, |d, _| d.next_cw())
+    pub fn rotate_cw_n(self, n: usize) -> Dir {
+        (0..n%4).fold(self, |d, _| d.rotate_cw())
     }
 
     pub fn apply(self, c: Coords) -> Coords {
@@ -83,12 +83,25 @@ impl Dir {
         }
     }
 
+    pub fn apply_n(self, c: Coords, n: usize) -> Coords {
+        (0..n).fold(c, |c, _| self.apply(c))
+    }
+
     pub fn to_axis(self) -> Axis {
         match self {
             Dir::Left => Axis::Horizontal,
             Dir::Right => Axis::Horizontal,
             Dir::Up => Axis::Vertical,
             Dir::Down => Axis::Vertical
+        }
+    }
+
+    pub fn is_pos(self) -> bool {
+        match self {
+            Dir::Left => false,
+            Dir::Right => true,
+            Dir::Up => false,
+            Dir::Down => true
         }
     }
 }
@@ -139,18 +152,18 @@ impl Rect {
         }
     }
 
-    pub fn rotate(&self) -> Rect {
+    pub fn rotate_cw(&self) -> Rect {
         Rect {
             pos: self.pos,
             size: Coords::new(self.size.y, self.size.x)
         }
     }
 
-    pub fn rotate_n(&self, n: usize) -> Rect {
+    pub fn rotate_cw_n(&self, n: usize) -> Rect {
         if n % 2 == 0 {
             *self
         }  else {
-            self.rotate()
+            self.rotate_cw()
         }
     }
 }

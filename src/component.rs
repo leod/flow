@@ -48,18 +48,22 @@ impl Element {
             },
             &Element::Source | &Element::Sink => ElementDescr {
                 size: grid::Coords::new(3, 3),
-                edge_points: vec![(Dir::Right, 1)],
+                edge_points: vec![(Dir::Right, 0)],
             }
         }
     }
 }
 
 impl Component {
+    pub fn size(&self) -> grid::Coords {
+        self.rect().size
+    }
+
     pub fn rect(&self) -> Rect {
         Rect {
             pos: self.top_left_pos,
             size: self.element.descr().size
         }
-        .rotate_n(self.rotation)
+        .rotate_cw_n(self.rotation)
     }
 }

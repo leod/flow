@@ -1,12 +1,11 @@
-use cgmath::Vector2;
+use cgmath::{Zero, ElementWise, Vector2};
 
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use types::Rect;
 use circuit::Circuit;
 use camera::Camera;
-use component::Element;
+use component::{Element, Component};
 
 pub const EDGE_LENGTH: f32 = 1.5;
 pub const HALF_EDGE_LENGTH: f32 = EDGE_LENGTH / 2.0;
@@ -21,7 +20,7 @@ impl Display {
     }
 
     pub fn draw_grid_edges(
-        self: &Display,
+        &self,
         ctx: &mut Context,
         camera: &Camera,
         circuit: &Circuit,
@@ -41,8 +40,47 @@ impl Display {
         Ok(())
     }
 
+    pub fn draw_component_edge_points(
+        &self,
+        ctx: &mut Context,
+        camera: &Camera,
+        component: &Component
+    ) -> GameResult<()> {
+        graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
+
+        let descr = component.element.descr();
+        let size = component.size();
+
+        for &(dir, steps) in descr.edge_points.iter() {
+            let dir_rot = dir.rotate_cw_n(component.rotation); 
+
+            println!("dir_rot: {:?}", dir_rot);
+
+            let origin =
+                if dir_rot.is_pos() {
+                    component.top_left_pos +
+                        dir_rot.apply(Vector2::zero()).mul_element_wise(size - Vector2::new(1, 1))
+                } else {
+                    component.top_left_pos
+                };
+
+            let a = dir_rot.rotate_cw().apply_n(origin, steps);
+            let b = dir_rot.apply(a);
+
+            let a_t = camera.transform(a.cast() * EDGE_LENGTH);
+            let b_t = camera.transform(b.cast() * EDGE_LENGTH);
+
+            let p_a = graphics::Point::new(a_t.x, a_t.y);
+            let p_b = graphics::Point::new(b_t.x, b_t.y);
+
+            graphics::line(ctx, &vec![p_a, p_b])?;
+        }
+
+        Ok(())
+    }
+
     pub fn draw_components(
-        self: &Display,
+        &self,
         ctx: &mut Context,
         camera: &Camera,
         circuit: &Circuit,
@@ -64,21 +102,28 @@ impl Display {
                     graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
                 }
                 Element::Source => {
-                    let size = (c.rect().size.cast() - Vector2::new(0.5, 0.5))
+                    let size = (c.size().cast() - Vector2::new(0.5, 0.5))
                         * EDGE_LENGTH;
-                    let shift = (c.rect().size.cast() - Vector2::new(1.0, 1.0))
+                    let shift = (c.size().cast() - Vector2::new(1.0, 1.0))
                         * HALF_EDGE_LENGTH;
                     let trans_size = camera.transform_delta(size);
                     let trans_shift = camera.transform_delta(shift);
+                    let center = p_t + trans_shift;
 
                     let r = graphics::Rect {
-                        x: p_t.x + trans_shift.x,
-                        y: p_t.y + trans_shift.y,
+                        x: center.x,
+                        y: center.y,
                         w: trans_size.x,
                         h: trans_size.y
                     };
-                    
+
+                    self.draw_component_edge_points(ctx, camera, c);
+
                     graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+                    /*graphics::circle(ctx, graphics::DrawMode::Line,
+                                     graphics::Point { x: center.x, y: center.y },
+                                     (trans_size / 2.0).magnitude(),
+                                     10);*/
                 }
                 _ => {}
             }
