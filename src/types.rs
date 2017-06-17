@@ -175,6 +175,11 @@ impl Rect {
             Dir::Left => self.pos + Coords::new(0, self.size.y)
         }
     }
+
+    pub fn is_within(&self, c: Coords) -> bool {
+        return c.x >= self.pos.x && c.x <= self.pos.x + self.size.x &&
+               c.y >= self.pos.y && c.y <= self.pos.y + self.size.y;
+    }
 }
 
 impl Iterator for RectIter {

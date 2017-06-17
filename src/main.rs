@@ -78,7 +78,7 @@ impl event::EventHandler for MainState {
 
         self.display.draw_grid_edges(ctx, &self.camera, &self.circuit)?;
         self.display.draw_components(ctx, &self.camera, &self.circuit)?;
-        self.hud.draw(ctx, &self.camera)?;
+        self.hud.draw(ctx, &self.camera, &self.circuit, &self.display)?;
 
         graphics::present(ctx);
 

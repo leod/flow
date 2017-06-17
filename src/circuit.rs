@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use types::Dir;
-use grid::{Coords, Point, Edge, EdgeMap};
+use grid::{self, Coords, Point, Edge, EdgeMap};
 use component::{ComponentId, Component};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -55,14 +55,48 @@ impl Circuit {
     }*/
 }
 
+fn is_edge_component_conflict(pos: Coords, dir: Dir, comp: &Component) -> bool{
+    println!("check {:?} -> {:?} with {:?}", pos, dir, comp);
+    if comp.rect.is_within(pos) && comp.rect.is_within(dir.apply(pos)) {
+        true
+    } else if comp.rect.is_within(pos) {
+        comp.edge_points.iter()
+            .find(|&&(point, point_dir)|
+                  grid::canonize_edge(point, point_dir) ==
+                  grid::canonize_edge(pos, dir.invert()))
+            .is_none()
+    } else if comp.rect.is_within(dir.apply(pos)) {
+        comp.edge_points.iter()
+            .find(|&&(point, point_dir)|
+                  grid::canonize_edge(point, point_dir) ==
+                  grid::canonize_edge(pos, dir))
+            .is_none()
+    } else {
+        false
+    }
+}
+
 impl Action {
     pub fn can_perform(&self, circuit: &Circuit) -> bool {
         match self {
             &Action::PlaceComponent(ref component) => {
                 // Check that the grid points are empty
-                component.rect
+                let points_empty = component.rect
                     .iter()
-                    .all(|c| !circuit.points.contains_key(&c))
+                    .all(|c| !circuit.points.contains_key(&c));
+
+                // Check that existing edges are ok
+                let rect = component.rect.iter();
+                let edge_conflict =
+                    rect.map(|pos|
+                              circuit.edges().iter_dirs(pos)
+                                     .map(|(dir, _edge)| 
+                                          is_edge_component_conflict(pos,
+                                              dir, component))
+                                     .any(|b| b))
+                        .any(|b| b);
+
+                points_empty && !edge_conflict
             }
             &Action::RemoveComponent(ref component_id) => {
                 circuit.components.contains_key(component_id)
@@ -71,16 +105,18 @@ impl Action {
                 circuit.points.get(&pos).is_some()
             }
             &Action::PlaceEdge(pos, dir, _edge) => {
-                // Check that we are not trying to place an edge in the middle
-                // of a component
-                let in_component = 
-                    match (circuit.points.get(&pos),
-                           circuit.points.get(&dir.apply(pos))) {
-                        (Some(id1), Some(id2)) => id1 == id2,
-                        _ => false
-                    };
+                let point_a = circuit.points.get(&pos);
+                let point_b = circuit.points.get(&dir.apply(pos));
+                let circuit_points = point_a.iter().chain(point_b.iter());
+                let component_conflict =
+                    circuit_points.map(|id| {
+                        let comp = circuit.components().get(&id.0).unwrap();
+                        let b = is_edge_component_conflict(pos, dir, &comp);
+                        println!("{}", b);
+                        b
+                    }).any(|b| b);
 
-                circuit.edges.get(pos, dir).is_none() && !in_component
+                circuit.edges.get(pos, dir).is_none() && !component_conflict
             }
             &Action::RemoveEdge(pos, dir) => {
                 circuit.edges.get(pos, dir).is_some()

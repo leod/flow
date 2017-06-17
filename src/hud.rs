@@ -11,7 +11,7 @@ use input::{self, Input};
 use camera::Camera;
 use component::{Component, Element};
 use circuit::{Circuit, Action};
-use display;
+use display::{self, Display};
 use grid;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -375,8 +375,33 @@ impl Hud {
     pub fn draw(
         &mut self,
         ctx: &mut Context,
-        camera: &Camera
+        camera: &Camera,
+        circuit: &Circuit,
+        display: &Display
     ) -> GameResult<()> {
+        // Draw current state 
+        match self.state {
+            State::PlaceElement { element, rotation_cw } => {
+                // Use cursor pos as center if possible
+                let c = self.grid_coords - element.descr().size / 2;
+
+                let component =
+                    element.new_component(c, rotation_cw);
+                let action = Action::PlaceComponent(component.clone());
+
+                let draw_mode =
+                    if action.can_perform(circuit) {
+                        display::DrawMode::Plan
+                    } else {
+                        display::DrawMode::Invalid
+                    };
+
+                display.draw_component(ctx, camera, &component, draw_mode)?; 
+            },
+            _ => {}
+        }
+
+        // Show grid coords that mouse is over
         let grid_coords_t = camera.transform(
             self.grid_coords.cast() * display::EDGE_LENGTH);
 
@@ -390,6 +415,7 @@ impl Hud {
         graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
         graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
 
+        // Some text for debugging
         let state_str = format!("{:?}", self.state);
         let state_text = graphics::Text::new(ctx, &state_str, &self.font)?;
         let state_text_pos = graphics::Point::new(
