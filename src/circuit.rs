@@ -14,6 +14,7 @@ pub enum Action {
     Compound(Vec<Action>),
 }
 
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Circuit {
     points: HashMap<Coords, Point>,
     edges: EdgeMap<Edge>,
@@ -58,7 +59,7 @@ impl Action {
         match self {
             &Action::PlaceComponent(ref component) => {
                 // Check that the grid points are empty
-                component.rect()
+                component.rect
                     .iter()
                     .all(|c| !circuit.points.contains_key(&c))
             }
@@ -107,7 +108,7 @@ impl Action {
 
                 // Mark grid points as used
                 let point = Point(component_id);
-                for c in component.rect().iter() {
+                for c in component.rect.iter() {
                     circuit.points.insert(c, point);
                     println!("mark {:?}", c);
                 }
@@ -119,7 +120,7 @@ impl Action {
                     .get(&component_id).unwrap().clone();
                 circuit.components.remove(&component_id); 
 
-                for c in component.rect().iter() {
+                for c in component.rect.iter() {
                     circuit.points.remove(&c);
                 }
 

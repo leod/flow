@@ -24,7 +24,7 @@ enum State {
     },
     PlaceElement {
         element: Element,
-        rotation: usize
+        rotation_cw: usize
     }
 }
 
@@ -131,7 +131,7 @@ impl Hud {
                     input::Keycode::Num2 => {
                         self.change_state(State::PlaceElement {
                             element: Element::Source,
-                            rotation: 0,
+                            rotation_cw: 0,
                         });
                     }
                     _ => {}
@@ -174,12 +174,8 @@ impl Hud {
             State::Initial => {
                 match button {
                     input::MouseButton::Left => {
-                        let component = Component {
-                            top_left_pos: grid_coords,
-                            element: Element::Node,
-                            rotation: 0
-                        };
-
+                        let component = Element::Node
+                            .new_component(grid_coords, 0);
                         let action = Action::PlaceComponent(component);
                         let undo_action = action.try_perform(circuit);
 
@@ -204,17 +200,13 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::PlaceElement { element, rotation } => {
+            State::PlaceElement { element, rotation_cw } => {
                 match button {
                     input::MouseButton::Left => {
                         // Use cursor pos as center if possible
                         let c = grid_coords - element.descr().size / 2;
 
-                        let component = Component {
-                            top_left_pos: c,
-                            element: element,
-                            rotation: rotation
-                        };
+                        let component = element.new_component(c, rotation_cw);
                         let action = Action::PlaceComponent(component);
                         self.try_perform_action(circuit, action);
                     }
@@ -282,10 +274,10 @@ impl Hud {
         }
 
         match self.state {
-            State::PlaceElement { ref mut rotation, .. } => {
+            State::PlaceElement { ref mut rotation_cw, .. } => {
                 match keycode {
                     input::Keycode::R => {
-                        *rotation += 1
+                        *rotation_cw += 1
                     }
                     _ => {}
                 }
@@ -342,11 +334,7 @@ impl Hud {
                         let c = grid::Coords::new(x, y);
 
                         if prev_c.is_none() || Some(c) != prev_c {
-                            let component = Component {
-                                top_left_pos: c,
-                                element: Element::Node,
-                                rotation: 0
-                            };
+                            let component = Element::Node.new_component(c, 0);
                             let action = Action::PlaceComponent(component);
                             if let Some(u_action) = action.try_perform(circuit) {
                                 undo.push(u_action);

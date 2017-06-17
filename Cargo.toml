@@ -7,3 +7,4 @@ authors = ["leod <subtle.frustration@proton.me>"]
 ggez = "*"
 cgmath = "*"
 floating-duration = "*"
+rand = "0.3"

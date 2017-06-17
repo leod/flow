@@ -48,24 +48,8 @@ impl Display {
     ) -> GameResult<()> {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
-        let descr = component.element.descr();
-        let size = component.size();
-
-        for &(dir, steps) in descr.edge_points.iter() {
-            let dir_rot = dir.rotate_cw_n(component.rotation); 
-
-            println!("dir_rot: {:?}", dir_rot);
-
-            let origin =
-                if dir_rot.is_pos() {
-                    component.top_left_pos +
-                        dir_rot.apply(Vector2::zero()).mul_element_wise(size - Vector2::new(1, 1))
-                } else {
-                    component.top_left_pos
-                };
-
-            let a = dir_rot.rotate_cw().apply_n(origin, steps);
-            let b = dir_rot.apply(a);
+        for &(a, dir) in component.edge_points.iter() {
+            let b = dir.apply(a);
 
             let a_t = camera.transform(a.cast() * EDGE_LENGTH);
             let b_t = camera.transform(b.cast() * EDGE_LENGTH);
@@ -88,7 +72,7 @@ impl Display {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
         for (ref _id, ref c) in circuit.components().iter() {
-            let p_t = camera.transform(c.top_left_pos.cast() * EDGE_LENGTH);
+            let p_t = camera.transform(c.pos.cast() * EDGE_LENGTH);
 
             match c.element {
                 Element::Node => {
@@ -102,10 +86,9 @@ impl Display {
                     graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
                 }
                 Element::Source => {
-                    let size = (c.size().cast() - Vector2::new(0.5, 0.5))
+                    let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                         * EDGE_LENGTH;
-                    let shift = (c.size().cast() - Vector2::new(1.0, 1.0))
-                        * HALF_EDGE_LENGTH;
+                    let shift = c.size().cast() * HALF_EDGE_LENGTH;
                     let trans_size = camera.transform_delta(size);
                     let trans_shift = camera.transform_delta(shift);
                     let center = p_t + trans_shift;
