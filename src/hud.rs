@@ -90,8 +90,7 @@ impl Hud {
         let undo_action = match self.state {
             State::Initial => None,
             State::Drawing { ref mut undo, .. } => {
-                undo.reverse();
-                Some(Action::Compound(undo.clone()))
+                Some(Action::ReverseCompound(undo.clone()))
             },
             State::PlaceElement { .. } => None,
         };
@@ -131,6 +130,12 @@ impl Hud {
                     input::Keycode::Num2 => {
                         self.change_state(State::PlaceElement {
                             element: Element::Source,
+                            rotation_cw: 0,
+                        });
+                    }
+                    input::Keycode::Num3 => {
+                        self.change_state(State::PlaceElement {
+                            element: Element::Sink,
                             rotation_cw: 0,
                         });
                     }

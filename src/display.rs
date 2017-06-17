@@ -1,4 +1,4 @@
-use cgmath::{Zero, ElementWise, Vector2};
+use cgmath::{InnerSpace, Vector2};
 
 use ggez::{GameResult, Context};
 use ggez::graphics;
@@ -69,9 +69,9 @@ impl Display {
         camera: &Camera,
         circuit: &Circuit,
     ) -> GameResult<()> {
-        graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
-
         for (ref _id, ref c) in circuit.components().iter() {
+            graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
+
             let p_t = camera.transform(c.pos.cast() * EDGE_LENGTH);
 
             match c.element {
@@ -85,7 +85,7 @@ impl Display {
 
                     graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
                 }
-                Element::Source => {
+                Element::Source | Element::Sink => {
                     let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                         * EDGE_LENGTH;
                     let shift = c.size().cast() * HALF_EDGE_LENGTH;
@@ -100,13 +100,21 @@ impl Display {
                         h: trans_size.y
                     };
 
-                    self.draw_component_edge_points(ctx, camera, c);
+                    self.draw_component_edge_points(ctx, camera, c)?;
 
                     graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
-                    /*graphics::circle(ctx, graphics::DrawMode::Line,
+
+                    graphics::circle(ctx, graphics::DrawMode::Fill,
                                      graphics::Point { x: center.x, y: center.y },
-                                     (trans_size / 2.0).magnitude(),
-                                     10);*/
+                                     camera.transform_distance(size.x / 2.0),
+                                     50);
+
+                    graphics::set_color(ctx,
+                                        graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
+                    graphics::circle(ctx, graphics::DrawMode::Fill,
+                                     graphics::Point { x: center.x, y: center.y },
+                                     camera.transform_distance(size.x / 2.0 - 0.05),
+                                     50);
                 }
                 _ => {}
             }

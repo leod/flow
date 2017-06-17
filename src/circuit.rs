@@ -12,6 +12,7 @@ pub enum Action {
     PlaceEdge(Coords, Dir, Edge),
     RemoveEdge(Coords, Dir),
     Compound(Vec<Action>),
+    ReverseCompound(Vec<Action>),
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -88,6 +89,10 @@ impl Action {
                 // Compound not included here
                 true
             }
+            &Action::ReverseCompound(_) => {
+                // ReverseCompound not included here
+                true
+            }
         }
     }
 
@@ -142,11 +147,16 @@ impl Action {
                 Action::PlaceEdge(c, dir, edge)
             }
             Action::Compound(actions) => {
-                let mut undo = actions.into_iter()
-                                      .map(|action| { action.perform(circuit) })
-                                      .collect::<Vec<_>>();
-                undo.reverse();
-                Action::Compound(undo) 
+                let undo = actions.into_iter()
+                                  .map(|action| { action.perform(circuit) })
+                                  .collect::<Vec<_>>();
+                Action::ReverseCompound(undo) 
+            }
+            Action::ReverseCompound(actions) => {
+                let undo = actions.into_iter().rev()
+                                  .map(|action| { action.perform(circuit) })
+                                  .collect::<Vec<_>>();
+                Action::ReverseCompound(undo) 
             }
         }
     }

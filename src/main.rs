@@ -49,7 +49,7 @@ impl MainState {
             frames: 0,
             hud: Hud::new(ctx)?,
             display: Display::new(),
-            camera: Camera::new(ctx.conf.window_width, ctx.conf.window_height, 50.0),
+            camera: Camera::new(ctx.conf.window_width, ctx.conf.window_height, 30.0),
             camera_input: CameraInput::new(8.0)
         };
         Ok(s)
