@@ -92,7 +92,11 @@ impl Hud {
         let undo_action = match self.state {
             State::Initial => None,
             State::Drawing { ref mut undo, .. } => {
-                Some(Action::ReverseCompound(undo.clone()))
+                if undo.len() > 0 {
+                    Some(Action::ReverseCompound(undo.clone()))
+                } else {
+                    None
+                }
             },
             State::PlaceElement { .. } => None,
         };
