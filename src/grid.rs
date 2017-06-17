@@ -21,12 +21,35 @@ pub struct Edge {
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct EdgeMap<T: Clone + Debug>(HashMap<(Coords, PosDir), T>);
 
-fn canonize_edge(c: Coords, d: Dir) -> (Coords, PosDir) {
+pub fn canonize_edge(c: Coords, d: Dir) -> (Coords, PosDir) {
     match d {
         Dir::Left => (d.apply(c), PosDir::Right),
         Dir::Right => (c, PosDir::Right),
         Dir::Up => (d.apply(c), PosDir::Down),
         Dir::Down => (c, PosDir::Down)
+    }
+}
+
+pub struct EdgeDirIter<'a, T: 'a + Clone + Debug> {
+    map: &'a EdgeMap<T>,
+    coords: Coords,
+    cur: Option<Dir>
+}
+
+impl<'a, T: Clone + Debug> Iterator for EdgeDirIter<'a, T> {
+    type Item = (Dir, &'a T);
+
+    fn next(&mut self) -> Option<(Dir, &'a T)> {
+        if let Some(dir) = self.cur {
+            self.cur = match dir.rotate_cw() {
+                           Dir::Up => None,
+                           next_dir => Some(next_dir)
+                       };
+
+            self.map.get(self.coords, dir).map(|edge| (dir, edge))
+        } else {
+            None
+        }
     }
 }
 
@@ -49,5 +72,13 @@ impl<T: Clone + Debug> EdgeMap<T> {
 
     pub fn iter(&self) -> hash_map::Iter<(Coords, PosDir), T> {
         self.0.iter()
+    }
+
+    pub fn iter_dirs(&self, c: Coords) -> EdgeDirIter<T> {
+        EdgeDirIter {
+            map: self,
+            coords: c,
+            cur: Some(Dir::Up)
+        }
     }
 }

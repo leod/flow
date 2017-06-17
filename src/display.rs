@@ -1,4 +1,4 @@
-use cgmath::{InnerSpace, Vector2};
+use cgmath::{InnerSpace, Zero, Vector2};
 
 use ggez::{GameResult, Context};
 use ggez::graphics;
@@ -9,6 +9,23 @@ use component::{Element, Component};
 
 pub const EDGE_LENGTH: f32 = 1.5;
 pub const HALF_EDGE_LENGTH: f32 = EDGE_LENGTH / 2.0;
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub enum DrawMode {
+    Real,
+    Plan,
+    Invalid
+}
+
+impl DrawMode {
+    pub fn to_color(self) -> graphics::Color {
+        match self {
+            DrawMode::Real => graphics::Color::new(1.0, 1.0, 1.0, 1.0),
+            DrawMode::Plan => graphics::Color::new(0.5, 0.5, 0.5, 1.0),
+            DrawMode::Invalid => graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+        }
+    }
+}
 
 pub struct Display {
 }
@@ -46,13 +63,12 @@ impl Display {
         camera: &Camera,
         component: &Component
     ) -> GameResult<()> {
-        graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
-
         for &(a, dir) in component.edge_points.iter() {
-            let b = dir.apply(a);
+            let delta = dir.apply(Vector2::zero()).cast();
+            let b = a.cast() + delta * 0.5;
 
             let a_t = camera.transform(a.cast() * EDGE_LENGTH);
-            let b_t = camera.transform(b.cast() * EDGE_LENGTH);
+            let b_t = camera.transform(b * EDGE_LENGTH);
 
             let p_a = graphics::Point::new(a_t.x, a_t.y);
             let p_b = graphics::Point::new(b_t.x, b_t.y);
@@ -63,6 +79,66 @@ impl Display {
         Ok(())
     }
 
+    pub fn draw_component(
+        &self,
+        ctx: &mut Context,
+        camera: &Camera,
+        c: &Component,
+        mode: DrawMode
+    ) -> GameResult<()> {
+        graphics::set_color(ctx, mode.to_color())?;
+
+        let p_t = camera.transform(c.pos.cast() * EDGE_LENGTH);
+
+        match c.element {
+            Element::Node => {
+                let r = graphics::Rect {
+                    x: p_t.x,
+                    y: p_t.y,
+                    w: camera.transform_distance(EDGE_LENGTH / 2.0),
+                    h: camera.transform_distance(EDGE_LENGTH / 2.0)
+                };
+
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+            }
+            Element::Source | Element::Sink => {
+                let size = (c.size().cast() + Vector2::new(0.5, 0.5))
+                    * EDGE_LENGTH;
+                let shift = c.size().cast() * HALF_EDGE_LENGTH;
+                let trans_size = camera.transform_delta(size);
+                let trans_shift = camera.transform_delta(shift);
+                let center = p_t + trans_shift;
+
+                let r = graphics::Rect {
+                    x: center.x,
+                    y: center.y,
+                    w: trans_size.x,
+                    h: trans_size.y
+                };
+
+                self.draw_component_edge_points(ctx, camera, c)?;
+
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+
+                graphics::circle(ctx, graphics::DrawMode::Fill,
+                                 graphics::Point { x: center.x, y: center.y },
+                                 camera.transform_distance(size.x / 2.0),
+                                 50)?;
+
+                graphics::set_color(ctx,
+                                    graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
+                graphics::circle(ctx, graphics::DrawMode::Fill,
+                                 graphics::Point { x: center.x, y: center.y },
+                                 camera.transform_distance(size.x / 2.0 - 0.05),
+                                 50)?;
+            }
+            _ => {}
+        }
+        
+        Ok(())
+    }
+
+
     pub fn draw_components(
         &self,
         ctx: &mut Context,
@@ -70,54 +146,7 @@ impl Display {
         circuit: &Circuit,
     ) -> GameResult<()> {
         for (ref _id, ref c) in circuit.components().iter() {
-            graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
-
-            let p_t = camera.transform(c.pos.cast() * EDGE_LENGTH);
-
-            match c.element {
-                Element::Node => {
-                    let r = graphics::Rect {
-                        x: p_t.x,
-                        y: p_t.y,
-                        w: camera.transform_distance(EDGE_LENGTH / 2.0),
-                        h: camera.transform_distance(EDGE_LENGTH / 2.0)
-                    };
-
-                    graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
-                }
-                Element::Source | Element::Sink => {
-                    let size = (c.size().cast() + Vector2::new(0.5, 0.5))
-                        * EDGE_LENGTH;
-                    let shift = c.size().cast() * HALF_EDGE_LENGTH;
-                    let trans_size = camera.transform_delta(size);
-                    let trans_shift = camera.transform_delta(shift);
-                    let center = p_t + trans_shift;
-
-                    let r = graphics::Rect {
-                        x: center.x,
-                        y: center.y,
-                        w: trans_size.x,
-                        h: trans_size.y
-                    };
-
-                    self.draw_component_edge_points(ctx, camera, c)?;
-
-                    graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
-
-                    graphics::circle(ctx, graphics::DrawMode::Fill,
-                                     graphics::Point { x: center.x, y: center.y },
-                                     camera.transform_distance(size.x / 2.0),
-                                     50);
-
-                    graphics::set_color(ctx,
-                                        graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
-                    graphics::circle(ctx, graphics::DrawMode::Fill,
-                                     graphics::Point { x: center.x, y: center.y },
-                                     camera.transform_distance(size.x / 2.0 - 0.05),
-                                     50);
-                }
-                _ => {}
-            }
+            self.draw_component(ctx, camera, c, DrawMode::Real)?;
         }
 
         Ok(())
