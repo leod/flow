@@ -43,20 +43,24 @@ pub struct Component {
 
 impl Element {
     pub fn descr(&self) -> ElementDescr {
-        match self {
-            &Element::Node => ElementDescr {
+        match *self {
+            Element::Node => ElementDescr {
                 size: grid::Coords::new(0, 0),
                 edge_points: vec![(Dir::Left, 0), (Dir::Right, 0),
                                   (Dir::Up, 0), (Dir::Down, 0)],
             },
-            &Element::Switch(_) => ElementDescr {
+            Element::Switch(_) => ElementDescr {
                 size: grid::Coords::new(0, 0),
                 edge_points: vec![(Dir::Left, 0), (Dir::Up, 0), (Dir::Down, 0)],
             },
-            &Element::Source | &Element::Sink => ElementDescr {
+            Element::Source => ElementDescr {
                 size: grid::Coords::new(2, 2),
-                edge_points: vec![(Dir::Right, 0)],
-            }
+                edge_points: vec![(Dir::Right, 1)],
+            },
+            Element::Sink => ElementDescr {
+                size: grid::Coords::new(0, 0),
+                edge_points: vec![(Dir::Right, 0)]
+            },
         }
     }
 
