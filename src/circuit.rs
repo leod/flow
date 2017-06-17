@@ -6,6 +6,8 @@ use component::{ComponentId, Component};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Action {
+    None,
+    NoUndo(Box<Action>),
     PlaceComponent(Component),
     RemoveComponentAtPos(Coords),
     PlaceEdge(Coords, Dir, Edge),
@@ -74,6 +76,8 @@ fn is_edge_component_conflict(pos: Coords, dir: Dir, comp: &Component) -> bool{
 impl Action {
     pub fn can_perform(&self, circuit: &Circuit) -> bool {
         match self {
+            &Action::None => true,
+            &Action::NoUndo(ref action) => action.can_perform(circuit),
             &Action::PlaceComponent(ref component) => {
                 // Check that the grid points are empty
                 let points_empty = component.rect
@@ -131,6 +135,11 @@ impl Action {
         assert!(self.can_perform(circuit));
 
         match self {
+            Action::None => Action::None,
+            Action::NoUndo(action) => {
+                action.perform(circuit);
+                Action::None
+            }
             Action::PlaceComponent(ref component) => {
                 // Insert in component map
                 let component_id = circuit.next_component_id;
@@ -163,7 +172,8 @@ impl Action {
 
                 for &(c, dir) in component.edge_points.iter() { 
                     if let Some(edge) = circuit.edges.remove(c, dir) {
-                        undo.push(Action::PlaceEdge(c, dir, edge));
+                        let action = Action::PlaceEdge(c, dir, edge);
+                        undo.push(Action::NoUndo(Box::new(action)));
                     }
                 }
 
