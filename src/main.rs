@@ -54,9 +54,7 @@ impl MainState {
         };
         Ok(s)
     }
-}
 
-impl MainState {
     fn input_event(&mut self, input: &Input) {
         self.hud.input_event(&mut self.circuit, &self.camera, input);
         self.camera_input.input_event(&mut self.camera, input);
@@ -152,20 +150,6 @@ pub fn main() {
     let ctx = &mut Context::load_from_conf("flow", "leod", c).unwrap();
 
     let state = &mut MainState::new(ctx).unwrap();
-
-    /*for x in 0..100 {
-        for y in 0..100 {
-            if x % 2 == 0 && y % 3 == 0 {
-                state.circuit.grid.set_edge(grid::Coords::new(x, y), Dir::Right,
-                    grid::Edge { layer: grid::Layer::Ground });
-            }
-
-            if x % 2 == 1 {
-                state.circuit.grid.set_edge(grid::Coords::new(x, y), Dir::Down,
-                    grid::Edge { layer: grid::Layer::Ground });
-            }
-        }
-    }*/
 
     if let Err(e) = event::run(ctx, state) {
         println!("Error encountered: {}", e);
