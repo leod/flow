@@ -7,7 +7,6 @@ use component::{ComponentId, Component};
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Action {
     PlaceComponent(Component),
-    RemoveComponent(ComponentId),
     RemoveComponentAtPos(Coords),
     PlaceEdge(Coords, Dir, Edge),
     RemoveEdge(Coords, Dir),
@@ -94,9 +93,6 @@ impl Action {
 
                 points_empty && !edge_conflict
             }
-            &Action::RemoveComponent(ref component_id) => {
-                circuit.components.contains_key(component_id)
-            }
             &Action::RemoveComponentAtPos(pos) => {
                 circuit.points.get(&pos).is_some()
             }
@@ -130,9 +126,9 @@ impl Action {
 
     // Returns an action that reverts the perfomed action
     pub fn perform(self, circuit: &mut Circuit) -> Action {
-        assert!(self.can_perform(circuit));
-
         println!("circuit action: {:?}", self);
+
+        assert!(self.can_perform(circuit));
 
         match self {
             Action::PlaceComponent(ref component) => {
@@ -150,9 +146,10 @@ impl Action {
                     println!("mark {:?}", c);
                 }
 
-                Action::RemoveComponent(component_id)
+                Action::RemoveComponentAtPos(component.pos)
             }
-            Action::RemoveComponent(component_id) => {
+            Action::RemoveComponentAtPos(pos) => {
+                let Point(component_id) = *circuit.points.get(&pos).unwrap();
                 let component = circuit.components
                     .get(&component_id).unwrap().clone();
                 circuit.components.remove(&component_id); 
@@ -161,11 +158,16 @@ impl Action {
                     circuit.points.remove(&c);
                 }
 
-                Action::PlaceComponent(component.clone())
-            }
-            Action::RemoveComponentAtPos(pos) => {
-                let Point(component_id) = *circuit.points.get(&pos).unwrap();
-                Action::RemoveComponent(component_id).perform(circuit)
+                let mut undo =
+                    vec![Action::PlaceComponent(component.clone())];
+
+                for &(c, dir) in component.edge_points.iter() { 
+                    if let Some(edge) = circuit.edges.remove(c, dir) {
+                        undo.push(Action::PlaceEdge(c, dir, edge));
+                    }
+                }
+
+                Action::ReverseCompound(undo)
             }
             Action::PlaceEdge(c, dir, edge) => {
                 circuit.edges.set(c, dir, edge);

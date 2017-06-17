@@ -66,8 +66,8 @@ impl<T: Clone + Debug> EdgeMap<T> {
         self.0.get(&canonize_edge(c, d))
     }
 
-    pub fn remove(&mut self, c: Coords, d: Dir)  {
-        self.0.remove(&canonize_edge(c, d));
+    pub fn remove(&mut self, c: Coords, d: Dir) -> Option<T> {
+        self.0.remove(&canonize_edge(c, d))
     }
 
     pub fn iter(&self) -> hash_map::Iter<(Coords, PosDir), T> {

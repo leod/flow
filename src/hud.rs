@@ -74,8 +74,10 @@ impl Hud {
     }
 
     fn push_undo(&mut self, undo_action: Action) {
-        self.undo.push(undo_action);
+        println!("undo: {:?}", undo_action);
 
+        self.undo.push(undo_action);
+        
         // After a user action is performed, clear redo
         self.redo.clear();
     }

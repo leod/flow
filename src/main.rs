@@ -82,7 +82,7 @@ impl event::EventHandler for MainState {
 
         self.frames += 1;
         if (self.frames % 100) == 0 {
-            println!("FPS: {}", ggez::timer::get_fps(ctx));
+            //println!("FPS: {}", ggez::timer::get_fps(ctx));
         }
 
         Ok(())
