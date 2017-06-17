@@ -11,6 +11,7 @@ mod hud;
 mod camera;
 mod camera_input;
 mod input;
+//#[cfg(test)] mod tests;
 
 use std::time::Duration;
 

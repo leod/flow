@@ -152,18 +152,27 @@ impl Rect {
         }
     }
 
-    pub fn rotate_cw(&self) -> Rect {
+    pub fn rotate(&self) -> Rect {
         Rect {
             pos: self.pos,
             size: Coords::new(self.size.y, self.size.x)
         }
     }
 
-    pub fn rotate_cw_n(&self, n: usize) -> Rect {
+    pub fn rotate_n(&self, n: usize) -> Rect {
         if n % 2 == 0 {
             *self
         }  else {
-            self.rotate_cw()
+            self.rotate()
+        }
+    }
+    
+    pub fn first_corner_cw(&self, dir: Dir) -> Coords {
+        match dir {
+            Dir::Up => self.pos + Coords::new(0, 0),
+            Dir::Right => self.pos + Coords::new(self.size.x, 0),
+            Dir::Down => self.pos + Coords::new(self.size.x, self.size.y),
+            Dir::Left => self.pos + Coords::new(0, self.size.y)
         }
     }
 }
@@ -172,13 +181,13 @@ impl Iterator for RectIter {
     type Item = Coords;
 
     fn next(&mut self) -> Option<Coords> {
-        if self.cur.y == self.rect.size.y || self.cur.x == self.rect.size.x {
+        if self.cur.y == self.rect.size.y + 1 || self.cur.x == self.rect.size.x + 1 {
             None
         } else {
             let p = self.rect.pos + self.cur;
 
             self.cur.x += 1;
-            if self.cur.x == self.rect.size.x {
+            if self.cur.x == self.rect.size.x + 1 {
                 self.cur.x = 0;
                 self.cur.y += 1;
             }

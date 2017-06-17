@@ -18,7 +18,7 @@ pub struct Edge {
     pub layer: Layer
 }
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct EdgeMap<T: Clone + Debug>(HashMap<(Coords, PosDir), T>);
 
 fn canonize_edge(c: Coords, d: Dir) -> (Coords, PosDir) {

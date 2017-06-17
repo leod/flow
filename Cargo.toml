@@ -7,3 +7,4 @@ authors = ["Leonard Dahlmann <leo.dahlmann@gmail.com>"]
 ggez = "*"
 cgmath = "*"
 floating-duration = "*"
+rand = "0.3"
