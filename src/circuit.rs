@@ -56,16 +56,12 @@ impl Circuit {
 }
 
 fn is_edge_component_conflict(pos: Coords, dir: Dir, comp: &Component) -> bool{
-    println!("check {:?} -> {:?} with {:?}", pos, dir, comp);
-    if comp.rect.is_within(pos) && comp.rect.is_within(dir.apply(pos)) {
+    let in_a = comp.rect.is_within(pos);
+    let in_b = comp.rect.is_within(dir.apply(pos));
+
+    if in_a && in_b {
         true
-    } else if comp.rect.is_within(pos) {
-        comp.edge_points.iter()
-            .find(|&&(point, point_dir)|
-                  grid::canonize_edge(point, point_dir) ==
-                  grid::canonize_edge(pos, dir.invert()))
-            .is_none()
-    } else if comp.rect.is_within(dir.apply(pos)) {
+    } else if in_a || in_b {
         comp.edge_points.iter()
             .find(|&&(point, point_dir)|
                   grid::canonize_edge(point, point_dir) ==
