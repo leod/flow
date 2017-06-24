@@ -3,14 +3,13 @@ extern crate cgmath;
 extern crate floating_duration;
 
 mod types;
-mod grid;
-mod component;
 mod display;
 mod circuit;
 mod hud;
 mod camera;
 mod camera_input;
 mod input;
+mod canon_map;
 //#[cfg(test)] mod tests;
 
 use std::time::Duration;

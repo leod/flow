@@ -1,6 +1,6 @@
 pub use types::ComponentId;
 use types::{Dir, Rect};
-use grid;
+use circuit;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum SwitchType {
@@ -18,7 +18,7 @@ pub enum Element {
 
 pub struct ElementDescr {
     // Width and height. Each element occupies a rect of grid points.
-    pub size: grid::Coords,
+    pub size: circuit::Coords,
 
     // Potential input/output edges for this type of element, each described
     // by the side of the rect they are and the position on that side.
@@ -32,33 +32,33 @@ pub struct Component {
     pub element: Element,
 
     // Position of the top left corner
-    pub pos: grid::Coords,
+    pub pos: circuit::Coords,
 
     pub rotation_cw: usize,
 
     // Derived quantities:
     pub rect: Rect,
-    pub edge_points: Vec<(grid::Coords, Dir)>,
+    pub edge_points: Vec<(circuit::Coords, Dir)>,
 }
 
 impl Element {
     pub fn descr(&self) -> ElementDescr {
         match *self {
             Element::Node => ElementDescr {
-                size: grid::Coords::new(0, 0),
+                size: circuit::Coords::new(0, 0),
                 edge_points: vec![(Dir::Left, 0), (Dir::Right, 0),
                                   (Dir::Up, 0), (Dir::Down, 0)],
             },
             Element::Switch(_) => ElementDescr {
-                size: grid::Coords::new(0, 0),
+                size: circuit::Coords::new(0, 0),
                 edge_points: vec![(Dir::Left, 0), (Dir::Up, 0), (Dir::Down, 0)],
             },
             Element::Source => ElementDescr {
-                size: grid::Coords::new(2, 2),
+                size: circuit::Coords::new(2, 2),
                 edge_points: vec![(Dir::Right, 1)],
             },
             Element::Sink => ElementDescr {
-                size: grid::Coords::new(0, 0),
+                size: circuit::Coords::new(0, 0),
                 edge_points: vec![(Dir::Right, 0)]
             },
         }
@@ -66,7 +66,7 @@ impl Element {
 
     pub fn new_component(
         &self,
-        top_left_pos: grid::Coords,
+        top_left_pos: circuit::Coords,
         rotation_cw: usize
     ) -> Component {
         let descr = self.descr();
@@ -96,7 +96,7 @@ impl Element {
 }
 
 impl Component {
-    pub fn size(&self) -> grid::Coords {
+    pub fn size(&self) -> circuit::Coords {
         self.rect.size
     }
 }

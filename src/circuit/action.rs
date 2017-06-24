@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
 use types::Dir;
-use grid::{self, Coords, Point, Edge, EdgeMap};
-use component::{ComponentId, Component};
+use canon_map::Canonize;
+
+use super::{Coords, Point, Component, Edge, Circuit};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Action {
@@ -16,46 +15,6 @@ pub enum Action {
     ReverseCompound(Vec<Action>),
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub struct Circuit {
-    points: HashMap<Coords, Point>,
-    edges: EdgeMap<Edge>,
-
-    components: HashMap<ComponentId, Component>,
-    next_component_id: ComponentId,
-}
-
-impl Circuit {
-    pub fn empty() -> Circuit {
-        Circuit {
-            points: HashMap::new(),
-            edges: EdgeMap::new(),
-            components: HashMap::new(),
-            next_component_id: 0,
-        }
-    }
-
-    pub fn points(&self) -> &HashMap<Coords, Point> {
-        &self.points
-    }
-
-    pub fn edges(&self) -> &EdgeMap<Edge> {
-        &self.edges
-    }
-
-    pub fn components(&self) -> &HashMap<ComponentId, Component> {
-        &self.components
-    }
-
-    /*pub fn new(edges: EdgeMap<Edge>, cs: HashMap<ComponentId, Component>) -> Circuit {
-        Circuit {
-            grid: grid,
-            components: cs,
-            next_component_id: cs.keys().max() + 1,
-        }
-    }*/
-}
-
 fn is_edge_component_conflict(pos: Coords, dir: Dir, comp: &Component) -> bool{
     let in_a = comp.rect.is_within(pos);
     let in_b = comp.rect.is_within(dir.apply(pos));
@@ -65,8 +24,8 @@ fn is_edge_component_conflict(pos: Coords, dir: Dir, comp: &Component) -> bool{
     } else if in_a || in_b {
         comp.edge_points.iter()
             .find(|&&(point, point_dir)|
-                  grid::canonize_edge(point, point_dir) ==
-                  grid::canonize_edge(pos, dir))
+                  (point, point_dir).canonize() ==
+                  (pos, dir).canonize())
             .is_none()
     } else {
         false
@@ -112,10 +71,10 @@ impl Action {
                         b
                     }).any(|b| b);
 
-                circuit.edges.get(pos, dir).is_none() && !component_conflict
+                circuit.edges.get((pos, dir)).is_none() && !component_conflict
             }
             &Action::RemoveEdge(pos, dir) => {
-                circuit.edges.get(pos, dir).is_some()
+                circuit.edges.get((pos, dir)).is_some()
             }
             &Action::Compound(_) => {
                 // Compound not included here
@@ -171,7 +130,7 @@ impl Action {
                     vec![Action::PlaceComponent(component.clone())];
 
                 for &(c, dir) in component.edge_points.iter() { 
-                    if let Some(edge) = circuit.edges.remove(c, dir) {
+                    if let Some(edge) = circuit.edges.remove((c, dir)) {
                         let action = Action::PlaceEdge(c, dir, edge);
                         undo.push(Action::NoUndo(Box::new(action)));
                     }
@@ -180,13 +139,13 @@ impl Action {
                 Action::ReverseCompound(undo)
             }
             Action::PlaceEdge(c, dir, edge) => {
-                circuit.edges.set(c, dir, edge);
+                circuit.edges.set((c, dir), edge);
 
                 Action::RemoveEdge(c, dir)
             }
             Action::RemoveEdge(c, dir) => {
-                let edge = *circuit.edges.get(c, dir).unwrap();
-                circuit.edges.remove(c, dir);
+                let edge = *circuit.edges.get((c, dir)).unwrap();
+                circuit.edges.remove((c, dir));
 
                 Action::PlaceEdge(c, dir, edge)
             }

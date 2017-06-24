@@ -9,16 +9,14 @@ use ggez::graphics::{self, Drawable};
 use types::{Dir, Axis};
 use input::{self, Input};
 use camera::Camera;
-use component::{Component, Element};
-use circuit::{Circuit, Action};
+use circuit::{self, Circuit, Action, Element};
 use display::{self, Display};
-use grid;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 enum State {
     Initial,
     Drawing {
-        last_grid_coords: grid::Coords,
+        last_grid_coords: circuit::Coords,
         axis_lock: Option<Axis>,
         undo: Vec<Action>
     },
@@ -39,16 +37,16 @@ pub struct Hud {
     mouse_y: i32,
     hold_control: bool,
 
-    grid_coords: grid::Coords,
+    grid_coords: circuit::Coords,
 }
 
-fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> grid::Coords {
+fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> circuit::Coords {
     let mouse_p_t = Vector2::new(x as f32, y as f32);
     let mouse_p = camera.untransform(mouse_p_t) / display::EDGE_LENGTH;
     let g_x = mouse_p.x.round() as isize;
     let g_y = mouse_p.y.round() as isize;
 
-    grid::Coords::new(g_x, g_y)
+    circuit::Coords::new(g_x, g_y)
 }
 
 impl Hud {
@@ -63,7 +61,7 @@ impl Hud {
             mouse_x: ctx.conf.window_width as i32 / 2,
             mouse_y: ctx.conf.window_height as i32 / 2,
             hold_control: false,
-            grid_coords: grid::Coords::new(0, 0),
+            grid_coords: circuit::Coords::new(0, 0),
         };
         Ok(h)
     }
@@ -318,10 +316,10 @@ impl Hud {
 
                 let locked_coords = match *axis_lock {
                     Some(Axis::Horizontal) =>
-                        grid::Coords::new(self.grid_coords.x,
+                        circuit::Coords::new(self.grid_coords.x,
                                           last_grid_coords.y),
                     Some(Axis::Vertical) =>
-                        grid::Coords::new(last_grid_coords.x,
+                        circuit::Coords::new(last_grid_coords.x,
                                           self.grid_coords.y),
                     None =>
                         self.grid_coords 
@@ -342,7 +340,7 @@ impl Hud {
 
                     let mut prev_c = None;
                     for (x, y) in lines {
-                        let c = grid::Coords::new(x, y);
+                        let c = circuit::Coords::new(x, y);
 
                         if prev_c.is_none() || Some(c) != prev_c {
                             let component = Element::Node.new_component(c, 0);
@@ -353,8 +351,8 @@ impl Hud {
 
                             if let Some(p) = prev_c {
                                 let dir = Dir::from_coords(p, c);
-                                let edge = grid::Edge {
-                                    layer: grid::Layer::Ground
+                                let edge = circuit::Edge {
+                                    layer: circuit::Layer::Ground
                                 };
 
                                 let action = Action::PlaceEdge(p, dir, edge);
