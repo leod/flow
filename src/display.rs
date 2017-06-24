@@ -3,9 +3,8 @@ use cgmath::{InnerSpace, Zero, Vector2};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use circuit::Circuit;
 use camera::Camera;
-use component::{Element, Component};
+use circuit::{Circuit, Element, Component};
 
 pub const EDGE_LENGTH: f32 = 1.5;
 pub const HALF_EDGE_LENGTH: f32 = EDGE_LENGTH / 2.0;
