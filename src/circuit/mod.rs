@@ -9,7 +9,9 @@ use canon_map::{Canonize, CanonMap};
 
 pub use types::Coords;
 pub use self::action::Action;
-pub use self::component::{ComponentId, Element, Component};
+pub use self::component::{Element, Component};
+
+pub type ComponentId = usize;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Point(pub ComponentId);

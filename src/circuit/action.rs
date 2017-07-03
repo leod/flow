@@ -22,7 +22,7 @@ fn is_edge_component_conflict(pos: Coords, dir: Dir, comp: &Component) -> bool{
     if in_a && in_b {
         true
     } else if in_a || in_b {
-        comp.edge_points.iter()
+        comp.edges.iter()
             .find(|&&(point, point_dir)|
                   (point, point_dir).canonize() ==
                   (pos, dir).canonize())
@@ -129,7 +129,7 @@ impl Action {
                 let mut undo =
                     vec![Action::PlaceComponent(component.clone())];
 
-                for &(c, dir) in component.edge_points.iter() { 
+                for &(c, dir) in component.edges.iter() { 
                     if let Some(edge) = circuit.edges.remove((c, dir)) {
                         let action = Action::PlaceEdge(c, dir, edge);
                         undo.push(Action::NoUndo(Box::new(action)));

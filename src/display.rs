@@ -56,13 +56,13 @@ impl Display {
         Ok(())
     }
 
-    pub fn draw_component_edge_points(
+    pub fn draw_component_edges(
         &self,
         ctx: &mut Context,
         camera: &Camera,
         component: &Component
     ) -> GameResult<()> {
-        for &(a, dir) in component.edge_points.iter() {
+        for &(a, dir) in component.edges.iter() {
             let delta = dir.apply(Vector2::zero()).cast();
             let b = a.cast() + delta * 0.5;
 
@@ -115,7 +115,7 @@ impl Display {
                     h: trans_size.y
                 };
 
-                self.draw_component_edge_points(ctx, camera, c)?;
+                self.draw_component_edges(ctx, camera, c)?;
 
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
 
