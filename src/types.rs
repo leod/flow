@@ -4,8 +4,6 @@ use cgmath;
 
 pub type Coords = cgmath::Vector2<isize>;
 
-pub type ComponentId = usize;
-
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum Dir {
     Left,
