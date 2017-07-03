@@ -10,6 +10,7 @@ mod camera;
 mod camera_input;
 mod input;
 mod canon_map;
+mod flow;
 //#[cfg(test)] mod tests;
 
 use std::time::Duration;
