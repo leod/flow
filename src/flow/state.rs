@@ -5,37 +5,74 @@ use types::Dir;
 use canon_map::CanonMap;
 
 use circuit::Component;
-use circuit::{self, Circuit, ComponentId};
+use circuit::{self, Element, Circuit, ComponentId};
 
 pub type CellIndex = usize;
+pub type ConnectionIndex = usize;
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub struct Connection {
+    enabled: bool,
     velocity: f64,
+    resistance: f64,
+
+    a: CellIndex,
+    b: CellIndex
 }
 
 pub struct Cell {
+    // whether pressure has to be recomputed
+    bound_pressure: bool,
+
+    // pressure of cell, is recomputed every step
     pressure: f64,
+
+    // connections, static
+    connections: Vec<ConnectionIndex>
 }
 
-pub struct CellConnections {
-    right: Option<(CellIndex, Connection)>,
-    down: Option<(CellIndex, Connection)>,
-    left: Option<CellIndex>,
-    up: Option<CellIndex>,
-}
-
+/* maybe needed later
 pub struct ComponentCells {
     indices: Vec<CellIndex>
 }
+*/
 
 pub struct State {
     cells: Vec<Cell>,
-    connections: Vec<CellConnections>,
-    component_cells: HashMap<ComponentId, ComponentCells>
+    connections: Vec<Connection>,
+    //component_cells: HashMap<ComponentId, ComponentCells>
 }
 
 impl State {
+    pub fn from_circuit(circuit: &Circuit) -> State {
+        let mut cells = circuit.components().iter().flat_map(
+            |(id, c)| {
+                let bound_pressure = match c.element {
+                    Element::Source | Element::Sink => true,
+                    _ => false
+                };
+                let pressure = match c.element {
+                    Element::Source => 100.0,
+                    _ => 0.0
+                };
+                vec![Cell {
+                    bound_pressure: bound_pressure,
+                    pressure: pressure,
+                    connections: vec![]
+                }]
+            }).collect();
+        let mut connections = circuit.components().iter().flat_map(
+            |(id, c)| {
+                //c.edges
+                vec![] // TODO
+            }).collect();
+        //let mut connections = circuit.compen; TODO
+        State {
+            cells: cells, 
+            connections: connections
+        }
+    }
+    
     /*fn connection(
         &self,
         index: CellIndex, 
