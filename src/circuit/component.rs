@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use types::{Dir, Rect};
 use circuit;
 
@@ -40,6 +42,9 @@ pub struct Component {
 
     // Same order as in the element description
     pub edges: Vec<(circuit::Coords, Dir)>,
+
+    // Unique positions of edges
+    pub edge_points: Vec<circuit::Coords>
 }
 
 impl Element {
@@ -84,14 +89,21 @@ impl Element {
                 let corner = rect.first_corner_cw(rot_dir);
                 let perp_dir = rot_dir.rotate_cw();
                 (perp_dir.apply_n(corner, k), rot_dir)
-            }).collect();
+            }).collect::<Vec<(circuit::Coords, Dir)>>();
+        let edge_points = edges.iter()
+            .map(|&(pos, _dir)| { pos })
+            .collect::<HashSet<circuit::Coords>>()
+            .iter()
+            .cloned()
+            .collect::<Vec<circuit::Coords>>();
 
         Component {
             element: *self,
             pos: top_left_pos,
             rotation_cw: rotation_cw,
             rect: rect,
-            edges: edges
+            edges: edges,
+            edge_points: edge_points
     }
     }
 }
