@@ -16,8 +16,8 @@ pub struct Connection {
     velocity: f64,
     resistance: f64,
 
-    a: CellIndex,
-    b: CellIndex
+    index_a: CellIndex,
+    index_b: CellIndex
 }
 
 pub struct Cell {
@@ -28,78 +28,94 @@ pub struct Cell {
     pressure: f64,
 
     // connections, static
-    connections: Vec<ConnectionIndex>
+    neighbors: Vec<ConnectionIndex>
 }
-
-/* maybe needed later
-pub struct ComponentCells {
-    indices: Vec<CellIndex>
-}
-*/
 
 pub struct State {
     cells: Vec<Cell>,
     connections: Vec<Connection>,
-    //component_cells: HashMap<ComponentId, ComponentCells>
+
+    // Cells of each component in the circuit.
+    // Same order as the component's edge points.
+    component_cell_indices: HashMap<ComponentId, Vec<CellIndex>>
 }
 
 impl State {
     pub fn from_circuit(circuit: &Circuit) -> State {
-        let mut cells = circuit.components().iter().flat_map(
-            |(id, c)| {
-                let bound_pressure = match c.element {
-                    Element::Source | Element::Sink => true,
-                    _ => false
-                };
-                let pressure = match c.element {
-                    Element::Source => 100.0,
-                    _ => 0.0
-                };
-                vec![Cell {
+        // Create component cells and map of indices
+        let mut cells = Vec::new();
+        let mut component_cell_indices = Vec::new();
+
+        for (&id, component) in circuit.components().iter() {
+            let bound_pressure = match component.element {
+                Element::Source | Element::Sink => true,
+                _ => false
+            };
+            let pressure = match component.element {
+                Element::Source => 100.0,
+                _ => 0.0
+            };
+
+            let mut cell_indices = Vec::new();
+            
+            for p in component.edge_points.iter() {
+                let cell = Cell {
                     bound_pressure: bound_pressure,
                     pressure: pressure,
-                    connections: vec![]
-                }]
-            }).collect();
-        let mut connections = circuit.components().iter().flat_map(
-            |(id, c)| {
-                //c.edges
-                vec![] // TODO
-            }).collect();
-        //let mut connections = circuit.compen; TODO
+                    neighbors: vec![]
+                };
+
+                cell_indices.push(cells.len());
+                cells.push(cell);
+            }
+
+            component_cell_indices.push((id, cell_indices));
+        }
+        let component_cell_indices = component_cell_indices
+            .iter().cloned().collect::<HashMap<_, _>>();
+
+        // Create connections and store in cells
+        let mut connections = Vec::new(); 
+
+        for (id_a, component_a) in circuit.components().iter() {
+            for &(pos_a, dir) in component_a.edges.iter() {
+                if circuit.edges().get((pos_a, dir)).is_some() {
+                    let pos_b = dir.apply(pos_a);
+
+                    // Every edge is always attached to two components,
+                    // find the second one
+                    let id_b = circuit.points().get(&pos_b).unwrap().0;
+                    let component_b = circuit.components().get(&id_b).unwrap();
+
+                    // Get the corresponding cell index
+                    let index_a = component_cell_indices.get(&id_a).unwrap()
+                        [component_a.edge_point_index(pos_a).unwrap()];
+                    let index_b = component_cell_indices.get(&id_b).unwrap()
+                        [component_b.edge_point_index(pos_b).unwrap()];
+
+                    // Add connection to both cells neighbors
+                    let connection_index = connections.len();
+
+                    cells[index_a].neighbors.push(index_a);
+                    cells[index_b].neighbors.push(index_b);
+
+                    let connection = Connection {
+                        enabled: true, 
+                        velocity: 0.0,
+                        resistance: 0.0,
+                        index_a: index_a,
+                        index_b: index_b,
+                    };
+
+                    connections.push(connection);
+                }
+            }
+        }
+
         State {
             cells: cells, 
-            connections: connections
+            connections: connections,
+            component_cell_indices: component_cell_indices,
         }
     }
-    
-    /*fn connection(
-        &self,
-        index: CellIndex, 
-        dir: Dir
-    ) -> Option<(CellIndex, Connection)> {
-        match dir {
-            Dir::Right => self.cell_connections[index].right,
-            Dir::Down => self.cell_connections[index].down,
-            Dir::Left =>
-                self.cells[index].left.map(|other_index| (other_index,
-                    self.cell_connections[other_index].right.unwrap().1)),
-            Dir::Up =>
-                self.cells[index].up.map(|other_index| (other_index,
-                    self.cell_connections[other_index].down.unwrap().1))
-        }
-    }
-
-    fn new_cell(c: &Circuit, id
-
-    pub fn from_circuit(c: &Circuit) -> Graph {
-        let mut component_cells = HashMap::<ComponentId, ComponentCells>::new();
-        let cells_with_ids = c.components().iter().flat_map(
-            |&(id, comp)| {
-                comp.edge_points.iter().zip(repeat(id))
-            }
-        State {
-
-        }
-    }*/
 }

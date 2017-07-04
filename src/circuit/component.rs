@@ -104,12 +104,16 @@ impl Element {
             rect: rect,
             edges: edges,
             edge_points: edge_points
-    }
+        }
     }
 }
 
 impl Component {
     pub fn size(&self) -> circuit::Coords {
         self.rect.size
+    }
+
+    pub fn edge_point_index(&self, pos: circuit::Coords) -> Option<usize> {
+        self.edge_points.iter().position(|&p| p == pos)
     }
 }
