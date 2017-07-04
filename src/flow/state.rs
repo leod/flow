@@ -5,7 +5,7 @@ use types::Dir;
 use canon_map::CanonMap;
 
 use circuit::Component;
-use circuit::{self, Element, Circuit, ComponentId};
+use circuit::{self, Element, Circuit, ComponentId, EdgeMap};
 
 pub type CellIndex = usize;
 pub type ConnectionIndex = usize;
@@ -37,10 +37,24 @@ pub struct State {
 
     // Cells of each component in the circuit.
     // Same order as the component's edge points.
-    component_cell_indices: HashMap<ComponentId, Vec<CellIndex>>
+    // TODO: Move to separate struct
+    component_cell_indices: HashMap<ComponentId, Vec<CellIndex>>,
+    connection_indices: CanonMap<(circuit::Coords, Dir), ConnectionIndex>
 }
 
 impl State {
+    pub fn get_cell(&self, id: ComponentId, edge_point_index: usize) -> &Cell {
+        let index =
+            self.component_cell_indices.get(&id).unwrap()[edge_point_index];
+        &self.cells[index]
+    }
+
+    pub fn get_connection(&self, p: circuit::Coords, dir: Dir) -> &Connection {
+       let index
+           = *self.connection_indices.get((p, dir)).unwrap();
+       &self.connections[index]
+    }
+
     pub fn from_circuit(circuit: &Circuit) -> State {
         // Create component cells and map of indices
         let mut cells = Vec::new();
@@ -76,6 +90,7 @@ impl State {
 
         // Create connections and store in cells
         let mut connections = Vec::new(); 
+        let mut connection_indices = CanonMap::new();
 
         for (id_a, component_a) in circuit.components().iter() {
             for &(pos_a, dir) in component_a.edges.iter() {
@@ -108,6 +123,8 @@ impl State {
                     };
 
                     connections.push(connection);
+
+                    connection_indices.set((pos_a, dir), connection_index);
                 }
             }
         }
@@ -115,7 +132,9 @@ impl State {
         State {
             cells: cells, 
             connections: connections,
+
             component_cell_indices: component_cell_indices,
+            connection_indices: connection_indices
         }
     }
 }
