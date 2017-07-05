@@ -6,6 +6,7 @@ use std::fmt::Debug;
 
 use types::{Dir, PosDir};
 use canon_map::{Canonize, CanonMap};
+use graph::Graph;
 
 pub use types::Coords;
 pub use self::action::Action;
@@ -29,15 +30,13 @@ pub struct Edge {
     pub layer: Layer
 }
 
-pub type EdgeMap = CanonMap<(CellId, CellId), Edge>;
-
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Circuit {
     // Components of the circuit
     components: HashMap<ComponentId, Component>,
 
-    // Edges between cells of two different components
-    edges: EdgeMap,
+    // Cells and edges between them.
+    graph: Graph<CellId, (), Edge>,
 
     // Grid coords that are occupied by components. Note that this can be
     // completely derived from the components. The point of this is to make it
@@ -51,9 +50,8 @@ pub struct Circuit {
 impl Circuit {
     pub fn empty() -> Circuit {
         Circuit {
-            points: HashMap::new(),
-            edges: EdgeMap::new(),
             components: HashMap::new(),
+            graph: Graph::new(),
             next_component_id: 0,
         }
     }
@@ -62,58 +60,11 @@ impl Circuit {
         &self.points
     }
 
-    pub fn edges(&self) -> &EdgeMap {
-        &self.edges
+    pub fn graph(&self) -> &Graph<CellId, (), Edge> {
+        &self.graph
     }
 
     pub fn components(&self) -> &HashMap<ComponentId, Component> {
         &self.components
     }
 }
-
-pub struct EdgeDirIter<'a> {
-    map: &'a EdgeMap,
-    coords: Coords,
-    cur: Option<Dir>
-}
-
-impl<'a> Iterator for EdgeDirIter<'a> {
-    type Item = (Dir, Edge);
-
-    fn next(&mut self) -> Option<(Dir, Edge)> {
-        if let Some(dir) = self.cur {
-            self.cur = match dir.rotate_cw() {
-                           Dir::Up => None,
-                           next_dir => Some(next_dir)
-                       };
-
-            self.map.get((self.coords, dir)).map(|edge| (dir, *edge))
-        } else {
-            None
-        }
-    }
-}
-
-impl EdgeMap {
-    pub fn iter_dirs(&self, c: Coords) -> EdgeDirIter {
-        EdgeDirIter {
-            map: self,
-            coords: c,
-            cur: Some(Dir::Up)
-        }
-    }
-}
-
-impl Canonize for (Coords, Dir) {
-    type Canon = (Coords, PosDir);
-
-    fn canonize(&self) -> Self::Canon {
-        match self.1 {
-            Dir::Left => (self.1.apply(self.0), PosDir::Right),
-            Dir::Right => (self.0, PosDir::Right),
-            Dir::Up => (self.1.apply(self.0), PosDir::Down),
-            Dir::Down => (self.0, PosDir::Down)
-        }
-    }
-}
-

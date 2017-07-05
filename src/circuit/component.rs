@@ -21,11 +21,7 @@ pub struct ElementDescr {
     // Width and height. Each element occupies a rect of grid points.
     pub size: circuit::Coords,
 
-    // Potential input/output edges for this type of element, each described
-    // by the side of the rect they are and the position on that side.
-    // NOTE: edges is assumed not to contain duplicates. Also, the side 
-    //       positions must be smaller than the size.
-    pub edges: Vec<(Dir, usize)>
+    pub edge_points: Vec<(Dir, Vec<usize>)>
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
