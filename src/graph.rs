@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::Hash;
 
 use canon_map::{Canonize, CanonMap};
 
@@ -7,15 +8,14 @@ pub struct Graph<NodeId: Eq + Ord + Hash, Node, Edge> {
     edges: CanonMap<(NodeId, NodeId), Edge>
 }
 
-type NeighboredGraph<NodeId: Eq + Ord + Hash, Node, Edge> =
+type NeighboredGraph<NodeId, Node, Edge> =
     Graph<NodeId, (Node, Vec<NodeId>), Edge>;
 
 type NodeIndex = usize;
 type EdgeIndex = usize;
 
-pub struct GraphState<NodeId: Eq + Ord + Hash,
-                      Node, Edge,
-                      NodeState, EdgeState> {
+pub struct GraphState<NodeId: Eq + Ord + Hash, Node, Edge> {
+    // Map from the graph to indices in our state vectors
     indices: Graph<NodeId, NodeIndex, EdgeIndex>,
 
     nodes: Vec<(Node, Vec<EdgeIndex>)>,
@@ -24,7 +24,7 @@ pub struct GraphState<NodeId: Eq + Ord + Hash,
 
 impl<NodeId: Eq + Ord + Hash + Copy, Node, Edge>
     NeighboredGraph<NodeId, Node, Edge> {
-    pub fn new() {
+    pub fn new() -> Self {
         Graph {
             edges: CanonMap::new(),
             nodes: HashMap::new()
@@ -102,7 +102,47 @@ impl<NodeId: Eq + Ord + Hash + Copy, Node, Edge>
     }
 }
 
-impl Canonize for (T, T) where T: Ord {
+impl<NodeId: Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> {
+    pub fn new<N, E, F_N, F_E>(
+        graph: &NeighboredGraph<NodeId, N, E>,
+        f_n: F_N,
+        f_e: F_E
+    ) -> Self
+    where F_N: FnMut(&N) -> Node, F_E: FnMut(&E) -> Edge {
+        let node_indices = graph.nodes.iter()
+            .enumerate()
+            .map(|(i, &(id, _))| (id, i))
+            .collect::<HashMap<NodeId, NodeIndex>>();
+        let edge_indices = graph.edges.iter()
+            .enumerate()
+            .map(|(i, &((id_a, id_b), _))| ((id_a, id_b), i))
+            .collect::<HashMap<(NodeId, NodeId), EdgeIndex>>();  
+
+        let nodes = graph.nodes.map(|(id, &(node, neighbors))| {
+                let neighbor_indices = neighbors.iter()
+                    .map(|id| node_indices.get(id).unwrap())
+                    .collect();
+                (f_n(node), neighbor_indices)
+            }).collect();
+        
+        let edges = graph.edges.map(|&((id_a, id_b), edge)|
+                f_e(edge) 
+            );
+
+        let indices = Graph {
+            nodes: node_indices,
+            edges: edge_indices
+        };
+
+        GraphState {
+            indices: indices,
+            nodes: nodes,
+            edges: edges
+        }
+    }
+}
+
+impl<T> Canonize for (T, T) where T: Ord {
     type Canon = (T, T);
 
     fn canonize(&self) -> (T, T) {
