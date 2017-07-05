@@ -13,8 +13,10 @@ pub use self::component::{Element, Component};
 
 pub type ComponentId = usize;
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub struct Point(pub ComponentId);
+// Each component consists of cells where edges can attach. The cells are
+// created at the edge points of the component, which are described by its
+// element.
+pub type CellId = (ComponentId, usize);
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Layer {
@@ -27,27 +29,22 @@ pub struct Edge {
     pub layer: Layer
 }
 
-impl Canonize for (Coords, Dir) {
-    type Canon = (Coords, PosDir);
-
-    fn canonize(&self) -> Self::Canon {
-        match self.1 {
-            Dir::Left => (self.1.apply(self.0), PosDir::Right),
-            Dir::Right => (self.0, PosDir::Right),
-            Dir::Up => (self.1.apply(self.0), PosDir::Down),
-            Dir::Down => (self.0, PosDir::Down)
-        }
-    }
-}
-
-pub type EdgeMap = CanonMap<(Coords, Dir), Edge>;
+pub type EdgeMap = CanonMap<(CellId, CellId), Edge>;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Circuit {
-    points: HashMap<Coords, Point>,
+    // Components of the circuit
+    components: HashMap<ComponentId, Component>,
+
+    // Edges between cells of two different components
     edges: EdgeMap,
 
-    components: HashMap<ComponentId, Component>,
+    // Grid coords that are occupied by components. Note that this can be
+    // completely derived from the components. The point of this is to make it
+    // easy for the hud to know which grid points are already in use.
+    points: HashMap<Coords, ComponentId>,
+
+    // Counter to create unique component ids
     next_component_id: ComponentId,
 }
 
@@ -61,7 +58,7 @@ impl Circuit {
         }
     }
 
-    pub fn points(&self) -> &HashMap<Coords, Point> {
+    pub fn points(&self) -> &HashMap<Coords, ComponentId> {
         &self.points
     }
 
@@ -103,6 +100,19 @@ impl EdgeMap {
             map: self,
             coords: c,
             cur: Some(Dir::Up)
+        }
+    }
+}
+
+impl Canonize for (Coords, Dir) {
+    type Canon = (Coords, PosDir);
+
+    fn canonize(&self) -> Self::Canon {
+        match self.1 {
+            Dir::Left => (self.1.apply(self.0), PosDir::Right),
+            Dir::Right => (self.0, PosDir::Right),
+            Dir::Up => (self.1.apply(self.0), PosDir::Down),
+            Dir::Down => (self.0, PosDir::Down)
         }
     }
 }

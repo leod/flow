@@ -32,9 +32,10 @@ pub struct ElementDescr {
 pub struct Component {
     pub element: Element,
 
-    // Position of the top left corner
+    // Position of the top left corner in the circuit this component belongs to
     pub pos: circuit::Coords,
 
+    // Number of clockwise rotations
     pub rotation_cw: usize,
 
     // Derived quantities:

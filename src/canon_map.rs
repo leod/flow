@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 pub trait Canonize {
-    type Canon: Eq + Hash + Debug;
+    type Canon;
 
     fn canonize(&self) -> Self::Canon;
 }
