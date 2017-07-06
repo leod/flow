@@ -3,7 +3,7 @@ use std::hash::Hash;
 
 use canon_map::{Canonize, CanonMap};
 
-pub struct Graph<NodeId: Eq + Ord + Hash, Node, Edge> {
+pub struct Graph<NodeId: Copy + Eq + Ord + Hash, Node, Edge> {
     nodes: HashMap<NodeId, Node>,
     edges: CanonMap<(NodeId, NodeId), Edge>
 }
@@ -14,7 +14,7 @@ pub type NeighboredGraph<NodeId, Node, Edge> =
 type NodeIndex = usize;
 type EdgeIndex = usize;
 
-pub struct GraphState<NodeId: Eq + Ord + Hash, Node, Edge> {
+pub struct GraphState<NodeId: Copy + Eq + Ord + Hash, Node, Edge> {
     // Map from the graph to indices in our state vectors
     indices: Graph<NodeId, NodeIndex, EdgeIndex>,
 
@@ -22,7 +22,7 @@ pub struct GraphState<NodeId: Eq + Ord + Hash, Node, Edge> {
     edges: Vec<Edge>
 }
 
-impl<NodeId: Eq + Ord + Hash + Copy, Node, Edge>
+impl<NodeId: Copy + Eq + Ord + Hash + Copy, Node, Edge>
     NeighboredGraph<NodeId, Node, Edge> {
     pub fn new() -> Self {
         Graph {
@@ -31,28 +31,29 @@ impl<NodeId: Eq + Ord + Hash + Copy, Node, Edge>
         }
     }
 
-    pub fn add_node(&self, id: NodeId, node: Node) {
+    pub fn add_node(&mut self, id: NodeId, node: Node) {
         assert!(!self.nodes.get(&id).is_some());
 
         self.nodes.insert(id, (node, Vec::new()));
     }
 
     pub fn get_node(&self, id: NodeId) -> Option<&Node> {
-        self.nodes.get(&id).map(|&(node, _)| &node)
+        self.nodes.get(&id).map(|&(ref node, _)| node)
     }
 
     pub fn get_neighbors(&self, id: NodeId) -> Option<&Vec<NodeId>> {
-        self.nodes.get(&id).map(|&(_, neighbors)| &neighbors)
+        self.nodes.get(&id).map(|&(_, ref neighbors)| neighbors)
     }
 
-    pub fn remove_node(&self, id: NodeId) -> (Node, Vec<NodeId>) {
+    pub fn remove_node(&mut self, id: NodeId) -> (Node, Vec<NodeId>) {
         match self.nodes.remove(&id) {
             Some((node, neighbors)) => {
                 for &neighbor in neighbors.iter() {
                     self.edges.remove((id, neighbor));
 
                     // Remove node from neighbors of the neighbor
-                    let other_neighbors = self.nodes.get_mut(&neighbor).unwrap().1;
+                    let ref mut other_neighbors =
+                        self.nodes.get_mut(&neighbor).unwrap().1;
                     let index = other_neighbors.iter()
                         .position(|&c| c == id).unwrap();
                     other_neighbors.remove(index);
@@ -64,17 +65,17 @@ impl<NodeId: Eq + Ord + Hash + Copy, Node, Edge>
         }
     }
 
-    pub fn add_edge(&self, a: NodeId, b: NodeId, edge: Edge) {
+    pub fn add_edge(&mut self, a: NodeId, b: NodeId, edge: Edge) {
         assert!(!self.edges.get((a, b)).is_some());
         self.edges.set((a, b), edge);
 
         {
-            let neighbors_a = self.nodes.get_mut(&a).unwrap().1;
+            let ref mut neighbors_a = self.nodes.get_mut(&a).unwrap().1;
             assert!(neighbors_a.iter().all(|&c| b != c));
             neighbors_a.push(b);
         }
         {
-            let neighbors_b = self.nodes.get_mut(&a).unwrap().1;
+            let ref mut neighbors_b = self.nodes.get_mut(&a).unwrap().1;
             assert!(neighbors_b.iter().all(|&c| a != c));
             neighbors_b.push(a);
         }
@@ -84,14 +85,14 @@ impl<NodeId: Eq + Ord + Hash + Copy, Node, Edge>
         self.edges.get((a, b))
     }
 
-    pub fn remove_edge(&self, a: NodeId, b: NodeId) -> Edge {
+    pub fn remove_edge(&mut self, a: NodeId, b: NodeId) -> Edge {
         {
-            let neighbors_a = self.nodes.get_mut(&a).unwrap().1;
+            let ref mut neighbors_a = self.nodes.get_mut(&a).unwrap().1;
             let index = neighbors_a.iter().position(|&c| c == b).unwrap();
             neighbors_a.remove(index);
         }
         {
-            let neighbors_b = self.nodes.get_mut(&b).unwrap().1;
+            let ref mut neighbors_b = self.nodes.get_mut(&b).unwrap().1;
             let index = neighbors_b.iter().position(|&c| c == b).unwrap();
             neighbors_b.remove(index);
         }
@@ -106,32 +107,32 @@ impl<NodeId: Eq + Ord + Hash + Copy, Node, Edge>
     }
 }
 
-impl<NodeId: Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> {
+impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> {
     pub fn new<N, E, F_N, F_E>(
         graph: &NeighboredGraph<NodeId, N, E>,
         f_n: F_N,
         f_e: F_E
     ) -> Self
-    where F_N: FnMut(&N) -> Node, F_E: FnMut(&E) -> Edge {
+    where F_N: Fn(&N) -> Node, F_E: Fn(&E) -> Edge {
         let node_indices = graph.nodes.iter()
             .enumerate()
             .map(|(i, (&id, _))| (id, i))
             .collect::<HashMap<NodeId, NodeIndex>>();
         let edge_indices = graph.edges.iter()
             .enumerate()
-            .map(|(i, &((id_a, id_b), _))| ((id_a, id_b), i))
-            .collect::<HashMap<(NodeId, NodeId), EdgeIndex>>();  
+            .map(|(i, (&(id_a, id_b), _))| ((id_a, id_b), i))
+            .collect::<CanonMap<(NodeId, NodeId), EdgeIndex>>();  
 
-        let nodes = graph.nodes.map(|(id, &(node, neighbors))| {
+        let nodes = graph.nodes.iter().map(|(id, &(ref node, ref neighbors))| {
                 let neighbor_indices = neighbors.iter()
-                    .map(|id| node_indices.get(id).unwrap())
+                    .map(|id| *node_indices.get(id).unwrap())
                     .collect();
                 (f_n(node), neighbor_indices)
             }).collect();
         
-        let edges = graph.edges.map(|&((id_a, id_b), edge)|
+        let edges = graph.edges.iter().map(|(&(id_a, id_b), edge)|
                 f_e(edge) 
-            );
+            ).collect();
 
         let indices = Graph {
             nodes: node_indices,
@@ -146,8 +147,8 @@ impl<NodeId: Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> {
     }
 }
 
-impl<NodeId: Eq + Ord + Hash, Node, Edge> Clone for Graph<NodeId, Node, Edge>
-where NodeId: Clone, Node: Clone, Edge: Clone {
+impl<NodeId, Node, Edge> Clone for Graph<NodeId, Node, Edge>
+where NodeId: Clone + Copy + Eq + Ord + Hash, Node: Clone, Edge: Clone {
     fn clone(&self) -> Self {
         Graph {
             nodes: self.nodes.clone(),
@@ -156,7 +157,7 @@ where NodeId: Clone, Node: Clone, Edge: Clone {
     }
 }
 
-impl<T> Canonize for (T, T) where T: Ord + Eq + Hash {
+impl<T> Canonize for (T, T) where T: Copy + Ord + Eq + Hash {
     type Canon = (T, T);
 
     fn canonize(&self) -> (T, T) {
