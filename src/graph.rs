@@ -18,7 +18,7 @@ pub struct GraphState<NodeId: Copy + Eq + Ord + Hash, Node, Edge> {
     // Map from the graph to indices in our state vectors
     indices: Graph<NodeId, NodeIndex, EdgeIndex>,
 
-    nodes: Vec<(Node, Vec<EdgeIndex>)>,
+    nodes: Vec<(Node, Vec<(NodeIndex, EdgeIndex)>)>,
     edges: Vec<Edge>,
 }
 
@@ -123,11 +123,13 @@ impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> 
             .map(|(i, (&(id_a, id_b), _))| ((id_a, id_b), i))
             .collect::<CanonMap<(NodeId, NodeId), EdgeIndex>>();  
 
-        let nodes = graph.nodes.iter().map(|(&id, &(ref node, ref neighbors))| {
+        let nodes = graph.nodes.iter().map(|(&id_a, &(ref node, ref neighbors))| {
                 let neighbor_indices = neighbors.iter()
-                    .map(|id| *node_indices.get(id).unwrap())
-                    .collect();
-                (f_n(id, node), neighbor_indices)
+                    .map(|id_b| *node_indices.get(id_b).unwrap());
+                let edge_indices = neighbors.iter()
+                    .map(|&id_b| *edge_indices.get((id_a, id_b)).unwrap());
+                let neighbors = neighbor_indices.zip(edge_indices).collect();
+                (f_n(id_a, node), neighbors)
             }).collect();
         
         let edges = graph.edges.iter().map(|(&(id_a, id_b), edge)|
@@ -144,6 +146,26 @@ impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> 
             nodes: nodes,
             edges: edges
         }
+    }
+
+    pub fn node(&self, i: NodeIndex) -> &Node {
+        &self.nodes[i].0
+    }
+
+    pub fn node_mut(&mut self, i: NodeIndex) -> &mut Node {
+        &mut self.nodes[i].0
+    }
+
+    pub fn neighbors(&self, i: NodeIndex) -> &Vec<(NodeIndex, EdgeIndex)> {
+        &self.nodes[i].1
+    }
+
+    pub fn edge(&self, i: EdgeIndex) -> &Edge {
+        &self.edges[i]
+    }
+
+    pub fn edge_mut(&mut self, i: EdgeIndex) -> &mut Edge {
+        &mut self.edges[i]
     }
 }
 
@@ -168,3 +190,4 @@ impl<T> Canonize for (T, T) where T: Copy + Ord + Eq + Hash {
         }
     }
 }
+
