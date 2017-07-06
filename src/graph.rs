@@ -156,6 +156,10 @@ impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> 
         &mut self.nodes[i].0
     }
 
+    pub fn node_index(&self, id: NodeId) -> NodeIndex {
+        *self.indices.nodes.get(&id).unwrap()
+    }
+
     pub fn neighbors(&self, i: NodeIndex) -> &Vec<(NodeIndex, EdgeIndex)> {
         &self.nodes[i].1
     }
@@ -166,6 +170,10 @@ impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> 
 
     pub fn edge_mut(&mut self, i: EdgeIndex) -> &mut Edge {
         &mut self.edges[i]
+    }
+
+    pub fn edge_index(&self, id_a: NodeId, id_b: NodeId) -> NodeIndex {
+        *self.indices.edges.get((id_a, id_b)).unwrap()
     }
 }
 

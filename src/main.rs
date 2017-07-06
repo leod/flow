@@ -94,7 +94,12 @@ impl event::EventHandler for MainState {
 
         self.display.draw_grid_edges(ctx, &self.camera, &self.circuit)?;
         self.display.draw_components(ctx, &self.camera, &self.circuit)?;
-        self.hud.draw(ctx, &self.camera, &self.circuit, &self.display)?;
+
+        if let &Some(ref state) = &self.flow {
+            self.display.draw_flow(ctx, &self.camera, &self.circuit, state)?;
+        } else {
+            self.hud.draw(ctx, &self.camera, &self.circuit, &self.display)?;
+        }
 
         graphics::present(ctx);
 
