@@ -19,7 +19,7 @@ pub struct GraphState<NodeId: Copy + Eq + Ord + Hash, Node, Edge> {
     indices: Graph<NodeId, NodeIndex, EdgeIndex>,
 
     nodes: Vec<(Node, Vec<EdgeIndex>)>,
-    edges: Vec<Edge>
+    edges: Vec<Edge>,
 }
 
 impl<NodeId: Copy + Eq + Ord + Hash + Copy, Node, Edge>
@@ -113,7 +113,7 @@ impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> 
         f_n: F_N,
         f_e: F_E
     ) -> Self
-    where F_N: Fn(&N) -> Node, F_E: Fn(&E) -> Edge {
+    where F_N: Fn(NodeId, &N) -> Node, F_E: Fn(NodeId, NodeId, &E) -> Edge {
         let node_indices = graph.nodes.iter()
             .enumerate()
             .map(|(i, (&id, _))| (id, i))
@@ -123,15 +123,15 @@ impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> 
             .map(|(i, (&(id_a, id_b), _))| ((id_a, id_b), i))
             .collect::<CanonMap<(NodeId, NodeId), EdgeIndex>>();  
 
-        let nodes = graph.nodes.iter().map(|(id, &(ref node, ref neighbors))| {
+        let nodes = graph.nodes.iter().map(|(&id, &(ref node, ref neighbors))| {
                 let neighbor_indices = neighbors.iter()
                     .map(|id| *node_indices.get(id).unwrap())
                     .collect();
-                (f_n(node), neighbor_indices)
+                (f_n(id, node), neighbor_indices)
             }).collect();
         
         let edges = graph.edges.iter().map(|(&(id_a, id_b), edge)|
-                f_e(edge) 
+                f_e(id_a, id_b, edge) 
             ).collect();
 
         let indices = Graph {

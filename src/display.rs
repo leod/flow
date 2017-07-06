@@ -6,6 +6,7 @@ use ggez::graphics;
 use types::Dir;
 use camera::Camera;
 use circuit::{Circuit, Element, Component};
+use flow;
 
 pub const EDGE_LENGTH: f32 = 1.5;
 pub const HALF_EDGE_LENGTH: f32 = EDGE_LENGTH / 2.0;
@@ -159,6 +160,22 @@ impl Display {
             self.draw_component(ctx, camera, c, DrawMode::Real)?;
         }
 
+        Ok(())
+    }
+
+    pub fn draw_flow(
+        &self,
+        ctx: &mut Context,
+        camera: &Camera,
+        circuit: &Circuit,
+        flow: &flow::State
+    ) -> GameResult<()> {
+        for (ref id, ref c) in circuit.components().iter() {
+            for (ref cell_index, ref cell) in c.cells.iter().enumerate() {
+                let cell_id = (id, cell_index);
+                //let cell = flow.
+            }
+        }
         Ok(())
     }
 }
