@@ -116,8 +116,7 @@ impl Action {
                     circuit.points.remove(&c);
                 }
 
-                let mut undo =
-                    vec![Action::PlaceComponent(component.clone())];
+                let mut undo = Vec::new();
 
                 // Remove cells belonging to the component
                 let cells = component.cells.iter().enumerate();
@@ -130,7 +129,7 @@ impl Action {
                     for &neighbor_id in neighbor_ids.iter() {
                         let neighbor_pos =
                             *circuit.graph.get_node(neighbor_id).unwrap();
-                        println!("{:?} to {:?}", cell_pos, neighbor_pos);
+                        //println!("{:?} to {:?}", cell_pos, neighbor_pos);
                         let dir = Dir::from_coords(cell_pos, neighbor_pos);
                         let edge =
                             circuit.graph.get_edge(cell_id, neighbor_id).unwrap();
@@ -142,6 +141,8 @@ impl Action {
 
                     circuit.graph.remove_node(cell_id);
                 }
+
+                undo.push(Action::PlaceComponent(component.clone()));
 
                 Action::ReverseCompound(undo)
             }
