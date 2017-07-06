@@ -1,6 +1,7 @@
 use std::collections::{HashMap, hash_map};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::iter::FromIterator;
 
 pub trait Canonize {
     type Canon: Eq + Hash;
@@ -33,4 +34,14 @@ impl<K: Eq + Hash + Copy + Canonize, V> CanonMap<K, V> {
     }
 }
 
+impl<K: Eq + Hash + Copy + Canonize, V> FromIterator<(K, V)> for CanonMap<K, V> {
+    fn from_iter<I: IntoIterator<Item=(K, V)>>(iter: I) -> Self {
+        let mut m = CanonMap::new();
 
+        for (k, v) in iter {
+            m.set(k, v);
+        }
+
+        m
+    }
+}

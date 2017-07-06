@@ -125,10 +125,12 @@ impl Action {
                     let cell_id = (component_id, cell_index);
 
                     // Create undo action for the edges attached to this cell
-                    let neighbor_ids = circuit.graph.get_neighbors(cell_id).unwrap();
-                    for &neighbor_id in neighbor_ids {
+                    let neighbor_ids = circuit.graph.get_neighbors(cell_id)
+                        .unwrap().clone();
+                    for &neighbor_id in neighbor_ids.iter() {
                         let neighbor_pos =
                             *circuit.graph.get_node(neighbor_id).unwrap();
+                        println!("{:?} to {:?}", cell_pos, neighbor_pos);
                         let dir = Dir::from_coords(cell_pos, neighbor_pos);
                         let edge =
                             circuit.graph.get_edge(cell_id, neighbor_id).unwrap();
