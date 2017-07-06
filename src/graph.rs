@@ -75,7 +75,7 @@ impl<NodeId: Copy + Eq + Ord + Hash + Copy, Node, Edge>
             neighbors_a.push(b);
         }
         {
-            let ref mut neighbors_b = self.nodes.get_mut(&a).unwrap().1;
+            let ref mut neighbors_b = self.nodes.get_mut(&b).unwrap().1;
             assert!(neighbors_b.iter().all(|&c| a != c));
             neighbors_b.push(a);
         }
