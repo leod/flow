@@ -19,7 +19,7 @@ use std::time::Duration;
 use floating_duration::TimeAsFloat;
 
 use ggez::conf;
-use ggez::event::{self, MouseButton, MouseState, Keycode, Mod};
+use ggez::event::{self, MouseButton, MouseState, Mod};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
@@ -28,10 +28,11 @@ use display::Display;
 use hud::Hud;
 use camera::Camera;
 use camera_input::CameraInput;
-use input::Input;
+use input::{Input, Keycode};
 
 struct MainState {
     circuit: Circuit,
+    flow: Option<flow::State>,
 
     frames: usize,
 
@@ -47,6 +48,7 @@ impl MainState {
         graphics::set_background_color(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
         let s = MainState {
             circuit: Circuit::empty(),
+            flow: None,
             frames: 0,
             hud: Hud::new(ctx)?,
             display: Display::new(),
@@ -57,8 +59,23 @@ impl MainState {
     }
 
     fn input_event(&mut self, input: &Input) {
-        self.hud.input_event(&mut self.circuit, &self.camera, input);
+        // Only allow changing the circuit when not simulating
+        if self.flow.is_none() {
+            self.hud.input_event(&mut self.circuit, &self.camera, input);
+        }
+
         self.camera_input.input_event(&mut self.camera, input);
+
+        match input {
+            &Input::KeyDown { keycode: Keycode::Space, keymod: _, repeat: _ } => {
+                self.flow = match &self.flow {
+                    &Some(_) => None,
+                    &None => Some(flow::State::from_circuit(&self.circuit))
+                }
+
+            }
+            _ => {}
+        }
     }
 }
 
