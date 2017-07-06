@@ -120,15 +120,14 @@ impl Display {
                 let trans_shift = camera.transform_delta(shift);
                 let center = p_t + trans_shift;
 
+                self.draw_component_edges(ctx, camera, c)?;
+
                 let r = graphics::Rect {
                     x: center.x,
                     y: center.y,
                     w: trans_size.x,
                     h: trans_size.y
                 };
-
-                self.draw_component_edges(ctx, camera, c)?;
-
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
 
                 graphics::circle(ctx, graphics::DrawMode::Fill,
@@ -170,10 +169,24 @@ impl Display {
         circuit: &Circuit,
         flow: &flow::State
     ) -> GameResult<()> {
-        for (ref id, ref c) in circuit.components().iter() {
-            for (ref cell_index, ref cell) in c.cells.iter().enumerate() {
+        graphics::set_color(ctx, graphics::Color::new(1.0, 0.6, 0.0, 1.0));
+
+        for (&id, ref c) in circuit.components().iter() {
+            for (cell_index, &cell) in c.cells.iter().enumerate() {
                 let cell_id = (id, cell_index);
-                //let cell = flow.
+                let node_index = flow.graph.node_index(cell_id);
+                let cell = flow.graph.node(node_index);
+
+                let p = c.cells[cell_index].cast();
+                let p_t = camera.transform(p * EDGE_LENGTH);
+                let size = camera.transform_distance(EDGE_LENGTH * 0.4);
+                let r = graphics::Rect {
+                    x: p_t.x,
+                    y: p_t.y,
+                    w: size,
+                    h: size
+                };
+                graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
             }
         }
         Ok(())
