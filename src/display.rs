@@ -3,6 +3,7 @@ use cgmath::{InnerSpace, Zero, Vector2};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
+use types::Dir;
 use camera::Camera;
 use circuit::{Circuit, Element, Component};
 
@@ -43,14 +44,17 @@ impl Display {
     ) -> GameResult<()> {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
-        for (&(c, dir), &_edge) in circuit.edges().iter() {
-            let a = camera.transform(c.cast() * EDGE_LENGTH);
-            let b = camera.transform(dir.apply(c).cast() * EDGE_LENGTH);
+        for (&(cell_a, cell_b), &_edge) in circuit.graph().edges().iter() {
+            let a = circuit.graph().get_node(cell_a).unwrap();
+            let b = circuit.graph().get_node(cell_b).unwrap();
 
-            let p_a = graphics::Point::new(a.x, a.y);
-            let p_b = graphics::Point::new(b.x, b.y);
+            let a_t = camera.transform(a.cast() * EDGE_LENGTH);
+            let b_t = camera.transform(b.cast() * EDGE_LENGTH);
 
-            graphics::line(ctx, &vec![p_a, p_b])?;
+            let a_p = graphics::Point::new(a_t.x, a_t.y);
+            let b_p = graphics::Point::new(b_t.x, b_t.y);
+
+            graphics::line(ctx, &vec![a_p, b_p])?;
         }
 
         Ok(())
@@ -62,17 +66,24 @@ impl Display {
         camera: &Camera,
         component: &Component
     ) -> GameResult<()> {
-        for &(a, dir) in component.edges.iter() {
-            let delta = dir.apply(Vector2::zero()).cast();
-            let b = a.cast() + delta * 0.5;
+        for &a in component.cells.iter() {
+            for &dir in &vec![Dir::Left, Dir::Right, Dir::Up, Dir::Down] {
+                let end = dir.apply(a);
 
-            let a_t = camera.transform(a.cast() * EDGE_LENGTH);
-            let b_t = camera.transform(b * EDGE_LENGTH);
+                if !component.rect.is_within(end) {
+                    let delta = dir.apply(Vector2::zero()).cast();
+                    let b = a.cast() + delta * 0.5;
 
-            let p_a = graphics::Point::new(a_t.x, a_t.y);
-            let p_b = graphics::Point::new(b_t.x, b_t.y);
+                    let a_t = camera.transform(a.cast() * EDGE_LENGTH);
+                    let b_t = camera.transform(b * EDGE_LENGTH);
 
-            graphics::line(ctx, &vec![p_a, p_b])?;
+                    let a_p = graphics::Point::new(a_t.x, a_t.y);
+                    let b_p = graphics::Point::new(b_t.x, b_t.y);
+
+                    graphics::line(ctx, &vec![a_p, b_p])?;
+                }
+            }
+
         }
 
         Ok(())

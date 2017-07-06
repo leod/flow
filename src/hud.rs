@@ -355,7 +355,7 @@ impl Hud {
                                     layer: circuit::Layer::Ground
                                 };
 
-                                let action = Action::PlaceEdge(p, dir, edge);
+                                let action = Action::PlaceEdgeAtPos(p, dir, edge);
                                 if let Some(u_action) = action.try_perform(circuit) {
                                     undo.push(u_action); 
                                 }
