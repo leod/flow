@@ -73,7 +73,7 @@ impl Display {
 
                 if !component.rect.is_within(end) {
                     let delta = dir.apply(Vector2::zero()).cast();
-                    let b = a.cast() + delta * 0.5;
+                    let b = a.cast() + delta * 0.4;
 
                     let a_t = camera.transform(a.cast() * EDGE_LENGTH);
                     let b_t = camera.transform(b * EDGE_LENGTH);
