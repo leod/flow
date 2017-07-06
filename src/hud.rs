@@ -420,11 +420,11 @@ impl Hud {
         graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
 
         // Some text for debugging
-        let state_str = format!("{:?}", self.state);
+        /*let state_str = format!("{:?}", self.state);
         let state_text = graphics::Text::new(ctx, &state_str, &self.font)?;
         let state_text_pos = graphics::Point::new(
             10.0 + state_text.width() as f32 / 2.0, 10.0);
-        state_text.draw(ctx, state_text_pos, 0.0)?;
+        state_text.draw(ctx, state_text_pos, 0.0)?;*/
 
         let coords_str = format!("({}, {})", self.grid_coords.x,
                                  self.grid_coords.y);
