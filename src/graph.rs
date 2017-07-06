@@ -93,7 +93,7 @@ impl<NodeId: Copy + Eq + Ord + Hash + Copy, Node, Edge>
         }
         {
             let ref mut neighbors_b = self.nodes.get_mut(&b).unwrap().1;
-            let index = neighbors_b.iter().position(|&c| c == b).unwrap();
+            let index = neighbors_b.iter().position(|&c| c == a).unwrap();
             neighbors_b.remove(index);
         }
 
