@@ -3,15 +3,15 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 pub trait Canonize {
-    type Canon;
+    type Canon: Eq + Hash;
 
     fn canonize(&self) -> Self::Canon;
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
-pub struct CanonMap<K: Canonize + Eq + Hash, V: Eq>(HashMap<K::Canon, V>);
+pub struct CanonMap<K: Canonize, V>(HashMap<K::Canon, V>);
 
-impl<K: Eq + Hash + Copy + Canonize, V: Eq + Clone + Debug> CanonMap<K, V> {
+impl<K: Eq + Hash + Copy + Canonize, V> CanonMap<K, V> {
     pub fn new() -> Self {
         CanonMap(HashMap::new())
     }

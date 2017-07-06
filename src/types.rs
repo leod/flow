@@ -37,6 +37,7 @@ pub struct RectIter {
 }
 
 impl Dir {
+    // Direction pointing from a to b
     pub fn from_coords(a: Coords, b: Coords) -> Dir {
         if b.x == a.x - 1 {
             assert!(a.y == b.y);
@@ -51,7 +52,7 @@ impl Dir {
             assert!(a.x == b.x);
             Dir::Down
         } else {
-            panic!("a == b");
+            panic!("a == b or even worse");
         }
     }
 
