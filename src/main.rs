@@ -1,6 +1,7 @@
 extern crate ggez;
 extern crate cgmath;
 extern crate floating_duration;
+extern crate rulinalg;
 
 mod types;
 mod display;
@@ -73,6 +74,11 @@ impl MainState {
                     &None => Some(flow::State::from_circuit(&self.circuit))
                 }
 
+            }
+            &Input::KeyDown { keycode: Keycode::T, keymod: _, repeat: _ } => {
+                if let &mut Some(ref mut flow) = &mut self.flow {
+                    flow::time_step(flow, 42.0);
+                }
             }
             _ => {}
         }
