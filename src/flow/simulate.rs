@@ -31,6 +31,7 @@ pub fn time_step(state: &mut State, dt: f64) {
             // TODO: we have to take care in which direction the flow goes
             let edge = state.graph.edge(edge_idx);
             b[row_id] -= if node_idx < neigh_node_idx { edge.velocity } else { -edge.velocity };
+            println!{"{}", edge.velocity};
             A[[row_id, row_id]] -= 1.0;
         }
     }
@@ -47,6 +48,29 @@ pub fn time_step(state: &mut State, dt: f64) {
     // output pressures
     println!("{:?}", x);
 
-    // update velocities
+    // write pressures
+    for (mut_idx, &node_idx) in state.mut_idx_to_node_idx.iter().enumerate() { 
+        state.graph.node_mut(node_idx).pressure = x[mut_idx];
+    }
 
+    println!("pressures: {:?}", (0..state.graph.num_nodes()).map(|i| state.graph.node(i).pressure).collect::<Vec<_>>());
+
+    // update velocities for all edges
+    for node_idx in 0 .. state.graph.num_nodes() {
+        // take care that we only update each edge once
+        for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx).clone().iter() {
+            if node_idx < neigh_node_idx {
+                let press_i = state.graph.node(node_idx).pressure;
+                let press_j = state.graph.node(neigh_node_idx).pressure;
+
+                println!("{}", press_i);
+                println!("{}", press_j);
+                state.graph.edge_mut(edge_idx).velocity += press_j - press_i;
+            }
+        }
+    }
+
+    // output new velocities
+     
 }
+
