@@ -11,8 +11,8 @@ pub struct Graph<NodeId: Copy + Eq + Ord + Hash, Node, Edge> {
 pub type NeighboredGraph<NodeId, Node, Edge> =
     Graph<NodeId, (Node, Vec<NodeId>), Edge>;
 
-type NodeIndex = usize;
-type EdgeIndex = usize;
+pub type NodeIndex = usize;
+pub type EdgeIndex = usize;
 
 pub struct GraphState<NodeId: Copy + Eq + Ord + Hash, Node, Edge> {
     // Map from the graph to indices in our state vectors
@@ -110,10 +110,10 @@ impl<NodeId: Copy + Eq + Ord + Hash + Copy, Node, Edge>
 impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> {
     pub fn new<N, E, F_N, F_E>(
         graph: &NeighboredGraph<NodeId, N, E>,
-        f_n: F_N,
+        mut f_n: F_N,
         f_e: F_E
     ) -> Self
-    where F_N: Fn(NodeId, &N) -> Node, F_E: Fn(NodeId, NodeId, &E) -> Edge {
+    where F_N: FnMut(NodeId, &N) -> Node, F_E: Fn(NodeId, NodeId, &E) -> Edge {
         let node_indices = graph.nodes.iter()
             .enumerate()
             .map(|(i, (&id, _))| (id, i))
@@ -164,6 +164,10 @@ impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> 
         &self.nodes[i].1
     }
 
+    pub fn num_nodes(&self) -> usize {
+        self.nodes.len()
+    }
+
     pub fn edge(&self, i: EdgeIndex) -> &Edge {
         &self.edges[i]
     }
@@ -174,6 +178,10 @@ impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> 
 
     pub fn edge_index(&self, id_a: NodeId, id_b: NodeId) -> NodeIndex {
         *self.indices.edges.get((id_a, id_b)).unwrap()
+    }
+    
+    pub fn num_edges(&self) -> usize {
+        self.edges.len()
     }
 }
 
