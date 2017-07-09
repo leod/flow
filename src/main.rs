@@ -24,7 +24,7 @@ use ggez::event::{self, MouseButton, MouseState, Mod};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use circuit::Circuit;
+use circuit::{Circuit, Element};
 use display::Display;
 use hud::Hud;
 use camera::Camera;
@@ -78,6 +78,20 @@ impl MainState {
             &Input::KeyDown { keycode: Keycode::T, keymod: _, repeat: _ } => {
                 if let &mut Some(ref mut flow) = &mut self.flow {
                     flow::time_step(flow, 42.0);
+                }
+            }
+            &Input::KeyDown { keycode: Keycode::R, keymod: _, repeat: _ } => {
+                for (&component_id, component) in self.circuit.components().iter() {
+                    match component.element {
+                        Element::Source => {
+                            if let &mut Some(ref mut flow) = &mut self.flow {
+                                let node_index = flow.graph.node_index((component_id, 0));
+                                flow.graph.node_mut(node_index).pressure = 0.0;
+                            }
+                        }
+                        _ => {
+                        }
+                    }
                 }
             }
             _ => {}

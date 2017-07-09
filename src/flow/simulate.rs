@@ -4,7 +4,7 @@ use rulinalg::vector::Vector;
 use flow::state::State;
 
 pub fn time_step(state: &mut State, dt: f64) {
-    // Calculate current throughput
+    /*// Calculate current throughput
     for node_idx in 0 .. state.graph.num_nodes() {
         // reset throughput
         state.graph.node_mut(node_idx).throughput = 0.0;
@@ -24,14 +24,15 @@ pub fn time_step(state: &mut State, dt: f64) {
     }
 
     for node_idx in 0 .. state.graph.num_nodes() {
+        let old_throughput = state.graph.node(node_idx).old_throughput;
         for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx).clone().iter() {
-            if node_idx < neigh_node_idx {
-                
-            }
+            let edge_vel = if node_idx < neigh_node_idx { edge.velocity } else { -edge.velocity };
+            let neigh_node = state.graph.node_mut(neigh_node_idx);
+            neigh_node.throughput += edge_vel/old_throughput;
         }
     }
 
-    // Advection
+    // Advection*/
     
 
     // solve for pressure
