@@ -187,7 +187,9 @@ impl Display {
                 };
 
                 let pressure = cell.pressure as f32;
+                let throughput = cell.old_throughput as f32;
                 graphics::set_color(ctx, graphics::Color::new(1.0 * (pressure/100.0), 0.6, 0.0, 1.0));
+                graphics::set_color(ctx, graphics::Color::new(1.0 * (throughput/100.0), 0.6, 0.0, 1.0));
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
             }
         }
