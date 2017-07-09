@@ -169,7 +169,6 @@ impl Display {
         circuit: &Circuit,
         flow: &flow::State
     ) -> GameResult<()> {
-        graphics::set_color(ctx, graphics::Color::new(1.0, 0.6, 0.0, 1.0));
 
         for (&id, ref c) in circuit.components().iter() {
             for (cell_index, &cell) in c.cells.iter().enumerate() {
@@ -186,6 +185,9 @@ impl Display {
                     w: size,
                     h: size
                 };
+
+                let pressure = cell.pressure as f32;
+                graphics::set_color(ctx, graphics::Color::new(1.0 * (pressure/100.0), 0.6, 0.0, 1.0));
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
             }
         }
