@@ -24,9 +24,8 @@ pub struct Cell {
     // Pressure of cell, recomputed every step
     pub pressure: f64,
 
-    // Throughput
-    pub throughput: f64,
-    pub old_throughput: f64,
+    // Blobs moving through the graph
+    pub load: usize,
 
     // for the matrix indices
     pub mut_idx: Option<usize>,
@@ -52,24 +51,21 @@ impl State {
                         Cell {
                             bound_pressure: true,
                             pressure: 100.0,
-                            throughput: 0.0,
-                            old_throughput: 0.0,
+                            load: 0,
                             mut_idx: None,
                         },
                     Element::Sink =>
                         Cell {
                             bound_pressure: true,
                             pressure: 0.0,
-                            throughput: 0.0,
-                            old_throughput: 0.0,
+                            load: 0,
                             mut_idx: None,
                         },
                     _ => {
                         let new_cell = Cell {
                             bound_pressure: false,
                             pressure: 0.0,
-                            throughput: 0.0,
-                            old_throughput: 0.0,
+                            load: 0,
                             mut_idx: Some(mut_idx_counter),
                         };
                         mut_idx_to_node_idx.push(node_idx_counter);

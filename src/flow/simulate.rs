@@ -4,37 +4,6 @@ use rulinalg::vector::Vector;
 use flow::state::State;
 
 pub fn time_step(state: &mut State, dt: f64) {
-    /*// Calculate current throughput
-    for node_idx in 0 .. state.graph.num_nodes() {
-        // reset throughput
-        state.graph.node_mut(node_idx).throughput = 0.0;
-        state.graph.node_mut(node_idx).old_throughput = 0.0;
-
-        // step through neigbors -> accumulate positive input
-        // due to divergence = 0 this is working
-        for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx).clone().iter() {
-            let add = {
-                let edge = state.graph.edge(edge_idx);
-                let edge_vel = if node_idx < neigh_node_idx { edge.velocity } else { -edge.velocity };
-                if edge_vel < 0.0 { edge_vel.abs() } else { 0.0 }
-            };
-            state.graph.node_mut(node_idx).old_throughput += add;
-        }
-        println!("{}", state.graph.node(node_idx).old_throughput);
-    }
-
-    for node_idx in 0 .. state.graph.num_nodes() {
-        let old_throughput = state.graph.node(node_idx).old_throughput;
-        for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx).clone().iter() {
-            let edge_vel = if node_idx < neigh_node_idx { edge.velocity } else { -edge.velocity };
-            let neigh_node = state.graph.node_mut(neigh_node_idx);
-            neigh_node.throughput += edge_vel/old_throughput;
-        }
-    }
-
-    // Advection*/
-    
-
     // solve for pressure
     let num_v = state.mut_idx_to_node_idx.len();
     let mut A = Matrix::<f64>::zeros(num_v, num_v); // system
@@ -60,8 +29,12 @@ pub fn time_step(state: &mut State, dt: f64) {
             // substract flow on rhs
             // TODO: we have to take care in which direction the flow goes
             let edge = state.graph.edge(edge_idx);
-            b[row_id] -= if node_idx < neigh_node_idx { edge.velocity } else { -edge.velocity };
-            //println!{"{}", edge.velocity};
+            b[row_id] -=
+                if node_idx < neigh_node_idx {
+                    edge.velocity
+                } else {
+                    -edge.velocity
+                };
             A[[row_id, row_id]] -= 1.0;
         }
     }
@@ -100,8 +73,5 @@ pub fn time_step(state: &mut State, dt: f64) {
             }
         }
     }
-
-    // output new velocities
-     
 }
 
