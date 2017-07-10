@@ -1,7 +1,16 @@
 use rulinalg::matrix::{Matrix, BaseMatrix};
 use rulinalg::vector::Vector;
 
-use flow::state::State;
+use graph::NodeIndex;
+use flow::state::{State, Connection};
+
+pub fn edge_velocity(to_idx: NodeIndex, from_idx: NodeIndex, c: &Connection) -> f64 {
+    if to_idx < from_idx {
+        c.velocity
+    } else {
+        -c.velocity
+    }
+}
 
 #[allow(non_snake_case)]
 fn solve_pressure(state: &mut State) {
@@ -29,12 +38,7 @@ fn solve_pressure(state: &mut State) {
             // substract flow on rhs
             // TODO: we have to take care in which direction the flow goes
             let edge = state.graph.edge(edge_idx);
-            b[row_id] -=
-                if node_idx < neigh_node_idx {
-                    edge.velocity
-                } else {
-                    -edge.velocity
-                };
+            b[row_id] -= edge_velocity(node_idx, neigh_node_idx, edge);
             A[[row_id, row_id]] -= 1.0;
         }
     }
@@ -90,6 +94,19 @@ fn flow(state: &mut State) {
         {
             let cell = state.graph.node_mut(node_idx);
             cell.old_load = cell.load;
+            cell.load = 0;
+        }
+        
+        for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx).clone().iter() {
+            let velocity = {
+                let edge = state.graph.edge(edge_idx);
+                edge_velocity(neigh_node_idx, node_idx, edge)
+            };
+            
+            if velocity > 0.0 {
+                let neigh_cell = state.graph.node_mut(neigh_node_idx);
+                //neigh_cell.load += 
+            }
         }
     }
 }
