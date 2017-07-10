@@ -1,4 +1,4 @@
-use rulinalg::matrix::Matrix;
+use rulinalg::matrix::{Matrix, BaseMatrix};
 use rulinalg::vector::Vector;
 
 use flow::state::State;
@@ -40,13 +40,18 @@ pub fn time_step(state: &mut State, dt: f64) {
     }
 
     // output matrix for debug
-    //println!("{:?}", A);
+    //println!("A: {:?}", A);
 
     // output rhs
-    //println!("{:?}", b);
+    //println!("b: {:?}", b);
 
     // solve this linear system (vll leo sagt 'shit')
-    let x = A.solve(b).unwrap();
+    //let x = A.solve(b).unwrap();
+    
+    let L = (-A).cholesky().unwrap();
+    //println!("L: {:?}", L);
+    let y = L.solve_l_triangular((-b)).unwrap();
+    let x = L.transpose().solve_u_triangular(y).unwrap();
 
     // output pressures
     //println!("{:?}", x);
