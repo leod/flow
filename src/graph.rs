@@ -108,12 +108,13 @@ impl<NodeId: Copy + Eq + Ord + Hash + Copy, Node, Edge>
 }
 
 impl<NodeId: Copy + Eq + Ord + Hash, Node, Edge> GraphState<NodeId, Node, Edge> {
-    pub fn new<N, E, F_N, F_E>(
+    pub fn new<N, E, FNode, FEdge>(
         graph: &NeighboredGraph<NodeId, N, E>,
-        mut f_n: F_N,
-        f_e: F_E
+        mut f_n: FNode,
+        f_e: FEdge
     ) -> Self
-    where F_N: FnMut(NodeId, &N) -> Node, F_E: Fn(NodeId, NodeId, &E) -> Edge {
+    where FNode: FnMut(NodeId, &N) -> Node,
+          FEdge: Fn(NodeId, NodeId, &E) -> Edge {
         let node_indices = graph.nodes.iter()
             .enumerate()
             .map(|(i, (&id, _))| (id, i))

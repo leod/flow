@@ -1,4 +1,4 @@
-use cgmath::{InnerSpace, Zero, Vector2};
+use cgmath::{Zero, Vector2};
 
 use ggez::{GameResult, Context};
 use ggez::graphics;
@@ -171,7 +171,7 @@ impl Display {
     ) -> GameResult<()> {
 
         for (&id, ref c) in circuit.components().iter() {
-            for (cell_index, &cell) in c.cells.iter().enumerate() {
+            for (cell_index, _pos) in c.cells.iter().enumerate() {
                 let cell_id = (id, cell_index);
                 let node_index = flow.graph.node_index(cell_id);
                 let cell = flow.graph.node(node_index);
@@ -187,7 +187,7 @@ impl Display {
                 };
 
                 let pressure = cell.pressure as f32;
-                graphics::set_color(ctx, graphics::Color::new(1.0 * (pressure/100.0), 0.0, 1.0 * (1.0 - pressure/100.0), 1.0));
+                graphics::set_color(ctx, graphics::Color::new(1.0 * (pressure/100.0), 0.0, 1.0 * (1.0 - pressure/100.0), 1.0))?;
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
             }
         }

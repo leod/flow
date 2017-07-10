@@ -12,13 +12,6 @@ pub enum Dir {
     Down,
 }
 
-// Only directions that increase a coordinate
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub enum PosDir {
-    Right,
-    Down
-}
-
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum Axis {
     Horizontal,
@@ -36,6 +29,7 @@ pub struct RectIter {
     cur: Coords
 }
 
+#[allow(dead_code)]
 impl Dir {
     // Direction pointing from a to b
     pub fn from_coords(a: Coords, b: Coords) -> Dir {
@@ -94,31 +88,6 @@ impl Dir {
             Dir::Down => Axis::Vertical
         }
     }
-
-    pub fn is_pos(self) -> bool {
-        match self {
-            Dir::Left => false,
-            Dir::Right => true,
-            Dir::Up => false,
-            Dir::Down => true
-        }
-    }
-}
-
-impl PosDir {
-    pub fn to_dir(self) -> Dir {
-        match self {
-            PosDir::Right => Dir::Right,
-            PosDir::Down => Dir::Down
-        }
-    }
-
-    pub fn apply(self, c: Coords) -> Coords {
-        match self {
-            PosDir::Right => Coords::new(c.x + 1, c.y),
-            PosDir::Down => Coords::new(c.x, c.y + 1)
-        }
-    }
 }
 
 impl Axis {
@@ -130,6 +99,7 @@ impl Axis {
     }
 }
 
+#[allow(dead_code)]
 impl Rect {
     pub fn from_coords(a: Coords, b: Coords) -> Rect {
         let pos = Coords::new(cmp::min(a.x, b.x),

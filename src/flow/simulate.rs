@@ -3,7 +3,8 @@ use rulinalg::vector::Vector;
 
 use flow::state::State;
 
-pub fn time_step(state: &mut State, dt: f64) {
+#[allow(non_snake_case)]
+pub fn time_step(state: &mut State, _dt: f64) {
     // solve for pressure
     let num_v = state.mut_idx_to_node_idx.len();
     let mut A = Matrix::<f64>::zeros(num_v, num_v); // system

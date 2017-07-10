@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use types::{Dir, Rect};
 use circuit;
 
