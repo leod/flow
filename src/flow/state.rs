@@ -8,6 +8,7 @@ pub struct Connection {
     pub velocity: f64,
     pub old_velocity: f64,
     pub resistance: f64,
+    pub flow: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -85,6 +86,7 @@ impl State {
                     velocity: 0.0,
                     old_velocity: 0.0,
                     resistance: 0.0,
+                    flow: 0
                 }
             });
             
