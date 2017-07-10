@@ -1,10 +1,4 @@
-use std::iter::repeat;
-use std::collections::HashMap;
-
-use types::Dir;
-use canon_map::CanonMap;
-
-use circuit::{self, Element, Component, Circuit, ComponentId, CellId};
+use circuit::{Element, Circuit, CellId};
 
 use graph::{NodeIndex, GraphState};
 
@@ -42,7 +36,7 @@ impl State {
         let mut mut_idx_counter = 0;
         let mut mut_idx_to_node_idx = Vec::new();
         let graph = GraphState::new(circuit.graph(),
-            |(component_id, cell_index), node| {
+            |(component_id, _cell_index), _node| {
                 let component =
                     circuit.components().get(&component_id).unwrap();
 

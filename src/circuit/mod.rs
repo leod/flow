@@ -2,10 +2,7 @@ mod action;
 mod component;
 
 use std::collections::HashMap;
-use std::fmt::Debug;
 
-use types::{Dir, PosDir};
-use canon_map::{Canonize, CanonMap};
 use graph::NeighboredGraph;
 
 pub use types::Coords;

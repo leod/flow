@@ -1,5 +1,4 @@
 use types::Dir;
-use canon_map::Canonize;
 
 use super::{Coords, Component, Edge, Circuit};
 
@@ -11,7 +10,6 @@ pub enum Action {
     RemoveComponentAtPos(Coords),
     PlaceEdgeAtPos(Coords, Dir, Edge),
     RemoveEdgeAtPos(Coords, Dir),
-    Compound(Vec<Action>),
     ReverseCompound(Vec<Action>),
 }
 
@@ -58,10 +56,6 @@ impl Action {
                     }
                     _ => false
                 }
-            }
-            &Action::Compound(_) => {
-                // Compound not included here
-                true
             }
             &Action::ReverseCompound(_) => {
                 // ReverseCompound not included here
@@ -164,12 +158,6 @@ impl Action {
                                                      (c_b, i_b.unwrap()));
 
                 Action::PlaceEdgeAtPos(pos, dir, edge)
-            }
-            Action::Compound(actions) => {
-                let undo = actions.into_iter()
-                                  .map(|action| { action.perform(circuit) })
-                                  .collect::<Vec<_>>();
-                Action::ReverseCompound(undo) 
             }
             Action::ReverseCompound(actions) => {
                 let undo = actions.into_iter().rev()
