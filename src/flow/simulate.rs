@@ -75,7 +75,7 @@ pub fn time_step(state: &mut State, _dt: f64) {
                 let edge = state.graph.edge_mut(edge_idx);
 
                 edge.old_velocity = edge.velocity;
-                edge.velocity += press_j - press_i;
+                edge.velocity = press_j - press_i;
             }
         }
     }
