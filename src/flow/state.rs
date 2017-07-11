@@ -31,6 +31,7 @@ pub struct State {
     pub graph: GraphState<CellId, Cell, Connection>,
     pub mut_idx_to_node_idx: Vec<NodeIndex>,
     pub source_cells: Vec<NodeIndex>,
+    pub sink_cells: Vec<NodeIndex>,
 }
 
 impl State {
@@ -39,6 +40,7 @@ impl State {
         let mut mut_idx_counter = 0;
         let mut mut_idx_to_node_idx = Vec::new();
         let mut source_cells = Vec::new();
+        let mut sink_cells = Vec::new();
         let graph = GraphState::new(circuit.graph(),
             |(component_id, _cell_index), _node| {
                 let component =
@@ -55,15 +57,18 @@ impl State {
                         };
                         source_cells.push(node_idx_counter);
                         new_cell
-                    }
-                    Element::Sink =>
-                        Cell {
+                    },
+                    Element::Sink => {
+                        let new_cell = Cell {
                             bound_pressure: true,
                             pressure: 0.0,
                             load: 0,
                             old_load: 0,
                             mut_idx: None,
-                        },
+                        };
+                        sink_cells.push(node_idx_counter);
+                        new_cell
+                    },
                     _ => {
                         let new_cell = Cell {
                             bound_pressure: false,
@@ -93,7 +98,8 @@ impl State {
         State {
             graph: graph,
             mut_idx_to_node_idx: mut_idx_to_node_idx,
-            source_cells: source_cells
+            source_cells: source_cells,
+            sink_cells: sink_cells,
         }
     }
 }
