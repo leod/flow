@@ -66,7 +66,10 @@ fn solve_pressure(state: &mut State) {
     }
 
     //println!("pressures: {:?}", (0..state.graph.num_nodes()).map(|i| state.graph.node(i).pressure).collect::<Vec<_>>());
+}
 
+fn project_velocities(state: &mut State)
+{
     // update velocities for all edges
     for node_idx in 0 .. state.graph.num_nodes() {
         // take care that we only update each edge once
@@ -113,5 +116,6 @@ fn flow(state: &mut State) {
 
 pub fn time_step(state: &mut State, _dt: f64) {
     solve_pressure(state);
+    project_velocities(state);
     flow(state);
 }
