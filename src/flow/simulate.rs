@@ -88,30 +88,78 @@ fn project_velocities(state: &mut State)
 }
 
 fn flow(state: &mut State) {
-    for i in 0 .. state.source_cells.len() {
-        let cell = state.graph.node_mut(state.source_cells[i]);
-        cell.load = 100000;
+    println!("++++++++++++++++++++++++++++++++++++");
+    println!("START");
+    println!("++++++++++++++++++++++++++++++++++++");
+    for node_idx in 0 .. state.graph.num_nodes() {
+        println!("now cell {0} has {1}, mut_idx: {2:?}", 
+            node_idx, 
+            state.graph.node(node_idx).load,
+            state.graph.node(node_idx).mut_idx);
+    }
+    println!("++++++++++++++++++++++++++++++++++++");
+
+    // backup old loads we will override with accumulation of neighbors
+    for node_idx in 0 .. state.graph.num_nodes() {
+        let cell = state.graph.node_mut(node_idx);
+        cell.old_load = cell.load;
+        cell.load = 0;
     }
 
     for node_idx in 0 .. state.graph.num_nodes() {
-        {
-            let cell = state.graph.node_mut(node_idx);
-            cell.old_load = cell.load;
-            cell.load = 0;
+        let cell_load = state.graph.node(node_idx).old_load;
+
+        // first get sum of outflow to get relative flow
+        let mut out_flow_sum = 0.0;
+        for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx).clone().iter() {
+            out_flow_sum += {
+                let edge = state.graph.edge(edge_idx);
+                let edge_vel = edge_velocity(neigh_node_idx, node_idx, edge);
+                if edge_vel > 0.0 {edge_vel} else {0.0}
+            };
         }
-        
+
+        // distribute our load to neighbors respecting relative flow
+        if (out_flow_sum < 0.000001) {continue;}
         for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx).clone().iter() {
             let velocity = {
                 let edge = state.graph.edge(edge_idx);
                 edge_velocity(neigh_node_idx, node_idx, edge)
             };
-            
-            if velocity > 0.0 {
-                let neigh_cell = state.graph.node_mut(neigh_node_idx);
-                //neigh_cell.load += 
-            }
+            if (velocity <= 0.0) {continue;}
+
+            let rel_vel = velocity / out_flow_sum;
+
+            println!("cell {0} is giving {1}: {2} % of {3}", node_idx, neigh_node_idx, rel_vel, cell_load);
+
+            let neigh_cell = state.graph.node_mut(neigh_node_idx);
+            // TODO: for now, accept that some load is lost in rounding 
+            neigh_cell.load += (rel_vel * cell_load as f64).floor() as usize;
         }
     }
+
+    // set the source/sink loads to a default value (minor TODO: maybe this should be a global setting?)
+    for i in 0 .. state.source_cells.len() {
+        let cell = state.graph.node_mut(state.source_cells[i]);
+        cell.load = 100000;
+    }
+    for i in 0 .. state.sink_cells.len() {
+        let cell = state.graph.node_mut(state.sink_cells[i]);
+        cell.load = 0;
+    }
+   
+
+    println!("++++++++++++++++++++++++++++++++++++");
+    println!("END");
+    println!("++++++++++++++++++++++++++++++++++++");
+    for node_idx in 0 .. state.graph.num_nodes() {
+        println!("now cell {0} has {1}, mut_idx: {2:?}", 
+            node_idx, 
+            state.graph.node(node_idx).load,
+            state.graph.node(node_idx).mut_idx);
+
+    }
+    println!("++++++++++++++++++++++++++++++++++++");
 }
 
 pub fn time_step(state: &mut State, _dt: f64) {
