@@ -22,6 +22,9 @@ fn solve_pressure(state: &mut State) {
     for (mut_idx, &node_idx) in state.mut_idx_to_node_idx.iter().enumerate() { 
         let row_id = mut_idx;
 
+        // here the blobs have an impact, we add pressure on the rhs of each row
+        b[row_id] += state.graph.node(node_idx).load as f64 / 10000.0;
+
         // step through neigbors -> either non-zero entry in matrix or add to rhs
         for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx).iter() {
             let neigh_node = state.graph.node(neigh_node_idx);
