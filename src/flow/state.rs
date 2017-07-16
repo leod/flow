@@ -1,6 +1,6 @@
 use std::ops::Neg;
 
-use circuit::{Element, Circuit, CellId};
+use circuit::{self, Element, Circuit, CellId};
 use graph::{NodeIndex, CompactGraph, CompactGraphState};
 
 #[derive(Clone, Copy, Debug)]
@@ -33,10 +33,15 @@ pub struct Cell {
     pub mut_idx: Option<usize>,
 }
 
+pub struct Component {
+    element: Element,
+    cells: Vec<NodeIndex>
+}
+
 pub struct State {
     pub graph: CompactGraph<CellId>,
     pub flow: CompactGraphState<Cell, Edge>,
-    
+    pub components: Vec<Component>,
     pub mut_idx_to_node_idx: Vec<NodeIndex>,
     pub source_cells: Vec<NodeIndex>,
     pub sink_cells: Vec<NodeIndex>,
@@ -53,6 +58,25 @@ pub fn edge_quantity<T: Neg<Output=T>>(
 }
 
 impl State {
+    fn new_component(
+        circuit: &Circuit,
+        graph: &CompactGraph<CellId>,
+        component: &circuit::Component
+    ) -> Component {
+        let cells = component.cells.iter().map(
+            |cell_pos| {
+                let point = circuit.points().get(cell_pos).unwrap();
+                let cell_index = point.1.unwrap();
+                let cell_id = (point.0, cell_index);
+                graph.node_index(cell_id)
+            }).collect();
+        
+        Component {
+            element: component.element,
+            cells: cells
+        }
+    }
+
     pub fn from_circuit(circuit: &Circuit) -> State {
         let mut source_cells = Vec::new();
         let mut sink_cells = Vec::new();
@@ -116,9 +140,15 @@ impl State {
                 }
             });
             
+        let components = circuit.components().iter().map(
+            |(&id, component)| {
+                State::new_component(circuit, &graph, component)
+            }).collect();
+            
         State {
             graph: graph,
             flow: flow,
+            components: components,
             mut_idx_to_node_idx: mut_idx_to_node_idx,
             source_cells: source_cells,
             sink_cells: sink_cells,

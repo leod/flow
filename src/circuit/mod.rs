@@ -27,7 +27,7 @@ pub struct Edge {
     pub layer: Layer
 }
 
-type Point = (ComponentId, Option<usize>);
+pub type Point = (ComponentId, Option<usize>);
 
 pub type Graph = NeighborGraph<CellId, Coords, Edge>;
 
