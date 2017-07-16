@@ -2,6 +2,7 @@ extern crate ggez;
 extern crate cgmath;
 extern crate floating_duration;
 extern crate rulinalg;
+extern crate num;
 
 mod types;
 mod display;

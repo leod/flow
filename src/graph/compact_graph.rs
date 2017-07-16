@@ -101,4 +101,8 @@ where NodeId: Copy + Eq + Ord + Hash {
     pub fn edge_index(&self, id_a: NodeId, id_b: NodeId) -> EdgeIndex {
         *self.indices.edges.get((id_a, id_b)).unwrap()
     }
+
+    pub fn num_edges(&self) -> usize {
+        self.edges.len()
+    }
 }

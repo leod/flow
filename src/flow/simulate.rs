@@ -1,16 +1,18 @@
 use rulinalg::matrix::{Matrix, BaseMatrix};
 use rulinalg::vector::Vector;
 
+use num::Signed;
+
 use graph::NodeIndex;
 use flow::state::{self, State};
 
-pub fn edge_velocity(
-    from_idx: NodeIndex, to_idx: NodeIndex, c: &state::Edge
-) -> f64 {
+pub fn edge_quantity<T: Signed>(
+    from_idx: NodeIndex, to_idx: NodeIndex, q: T
+) -> T {
     if from_idx < to_idx {
-        c.velocity
+        q
     } else {
-        -c.velocity
+        -q
     }
 }
 
@@ -44,7 +46,7 @@ fn solve_pressure(state: &mut State) {
             // substract flow on rhs
             // TODO: we have to take care in which direction the flow goes
             let edge = state.flow.edge(edge_idx);
-            b[row_id] -= edge_velocity(node_idx, neigh_node_idx, edge);
+            b[row_id] -= edge_quantity(node_idx, neigh_node_idx, edge.velocity);
             A[[row_id, row_id]] -= 1.0;
         }
     }
@@ -107,6 +109,10 @@ fn flow(state: &mut State) {
         cell.load = 0;
     }
 
+    for edge_idx in 0 .. state.graph.num_edges() {
+        state.flow.edge_mut(edge_idx).flow = 0;
+    }
+
     for node_idx in 0 .. state.graph.num_nodes() {
         let cell_load = state.flow.node(node_idx).old_load;
 
@@ -116,7 +122,8 @@ fn flow(state: &mut State) {
         for &(neigh_node_idx, edge_idx) in neighbors {
             out_flow_sum += {
                 let edge = state.flow.edge(edge_idx);
-                let edge_vel = edge_velocity(node_idx, neigh_node_idx, edge);
+                let edge_vel =
+                    edge_quantity(node_idx, neigh_node_idx, edge.velocity);
                 if edge_vel > 0.0 { edge_vel } else { 0.0 }
             };
         }
@@ -129,7 +136,7 @@ fn flow(state: &mut State) {
         for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx) {
             let velocity = {
                 let edge = state.flow.edge(edge_idx);
-                edge_velocity(node_idx, neigh_node_idx, edge)
+                edge_quantity(node_idx, neigh_node_idx, edge.velocity)
             };
             if velocity <= 0.0 {
                 continue;
@@ -139,9 +146,12 @@ fn flow(state: &mut State) {
 
             println!("cell {0} is giving {1}: {2} % of {3}", node_idx, neigh_node_idx, rel_vel, cell_load);
 
-            let neigh_cell = state.flow.node_mut(neigh_node_idx);
             // TODO: for now, accept that some load is lost in rounding 
-            neigh_cell.load += (rel_vel * cell_load as f64).floor() as usize;
+            let flow = (rel_vel * cell_load as f64).floor() as usize;
+
+            state.flow.node_mut(neigh_node_idx).load += flow;
+            state.flow.edge_mut(edge_idx).flow +=
+                edge_quantity(node_idx, neigh_node_idx, flow as isize);
         }
     }
 
