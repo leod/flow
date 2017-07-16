@@ -1,4 +1,4 @@
-use num::Signed;
+use std::ops::Neg;
 
 use circuit::{Element, Circuit, CellId};
 use graph::{NodeIndex, CompactGraph, CompactGraphState};
@@ -42,7 +42,7 @@ pub struct State {
     pub sink_cells: Vec<NodeIndex>,
 }
 
-pub fn edge_quantity<T: Signed>(
+pub fn edge_quantity<T: Neg<Output=T>>(
     from_idx: NodeIndex, to_idx: NodeIndex, q: T
 ) -> T {
     if from_idx < to_idx {
