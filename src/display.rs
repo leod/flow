@@ -5,7 +5,7 @@ use ggez::graphics;
 
 use types::Dir;
 use camera::Camera;
-use circuit::{Circuit, Element, Component};
+use circuit::{Circuit, SwitchType, Element, Component};
 use flow;
 
 pub const EDGE_LENGTH: f32 = 1.5;
@@ -110,6 +110,33 @@ impl Display {
                     h: camera.transform_distance(EDGE_LENGTH / 2.0)
                 };
 
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+            }
+            Element::Switch(kind) => {
+                let control_p_t =
+                    camera.transform(c.cells[0].cast() * EDGE_LENGTH);
+                let flow_p_t = camera.transform(c.cells[1].cast() * EDGE_LENGTH);
+                
+                let control_draw_mode = match kind {
+                    SwitchType::On => graphics::DrawMode::Fill,
+                    SwitchType::Off => graphics::DrawMode::Line
+                };
+
+                graphics::circle(ctx,
+                    control_draw_mode,
+                    graphics::Point {
+                        x: control_p_t.x,
+                        y: control_p_t.y
+                    },
+                    camera.transform_distance(HALF_EDGE_LENGTH * 0.75),
+                    50)?;
+                
+                let r = graphics::Rect {
+                    x: flow_p_t.x,
+                    y: flow_p_t.y,
+                    w: camera.transform_distance(EDGE_LENGTH),
+                    h: camera.transform_distance(EDGE_LENGTH)
+                };
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
             }
             Element::Source | Element::Sink => {
