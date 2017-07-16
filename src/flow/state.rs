@@ -4,11 +4,16 @@ use graph::{NodeIndex, CompactGraph, CompactGraphState};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Edge {
+    pub resistance: f64,
+
     pub enabled: bool,
+
+    // Velocity from the smaller node index to the larger node index
     pub velocity: f64,
     pub old_velocity: f64,
-    pub resistance: f64,
-    pub flow: usize,
+
+    // Flow in the last tick from the smaller node index to the larger node index
+    pub flow: isize,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -23,7 +28,7 @@ pub struct Cell {
     pub load: usize,
     pub old_load: usize,
 
-    // for the matrix indices
+    // Index in the matrix for pressure solving
     pub mut_idx: Option<usize>,
 }
 
@@ -92,10 +97,10 @@ impl State {
             },
             |_, _, _| {
                 Edge {
+                    resistance: 0.0,
                     enabled: true,
                     velocity: 0.0,
                     old_velocity: 0.0,
-                    resistance: 0.0,
                     flow: 0
                 }
             });
