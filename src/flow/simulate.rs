@@ -117,18 +117,23 @@ fn flow(state: &mut State) {
             out_flow_sum += {
                 let edge = state.flow.edge(edge_idx);
                 let edge_vel = edge_velocity(node_idx, neigh_node_idx, edge);
-                if edge_vel > 0.0 {edge_vel} else {0.0}
+                if edge_vel > 0.0 { edge_vel } else { 0.0 }
             };
         }
 
         // distribute our load to neighbors respecting relative flow
-        if (out_flow_sum < 0.000001) {continue;}
+        if out_flow_sum < 0.000001 {
+            continue;
+        }
+        
         for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx) {
             let velocity = {
                 let edge = state.flow.edge(edge_idx);
                 edge_velocity(node_idx, neigh_node_idx, edge)
             };
-            if (velocity <= 0.0) {continue;}
+            if velocity <= 0.0 {
+                continue;
+            }
 
             let rel_vel = velocity / out_flow_sum;
 

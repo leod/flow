@@ -169,7 +169,6 @@ impl Display {
         circuit: &Circuit,
         flow: &flow::State
     ) -> GameResult<()> {
-
         for (&id, ref c) in circuit.components().iter() {
             for (cell_index, _pos) in c.cells.iter().enumerate() {
                 let cell_id = (id, cell_index);
