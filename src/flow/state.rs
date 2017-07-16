@@ -1,5 +1,6 @@
-use circuit::{Element, Circuit, CellId};
+use num::Signed;
 
+use circuit::{Element, Circuit, CellId};
 use graph::{NodeIndex, CompactGraph, CompactGraphState};
 
 #[derive(Clone, Copy, Debug)]
@@ -39,6 +40,16 @@ pub struct State {
     pub mut_idx_to_node_idx: Vec<NodeIndex>,
     pub source_cells: Vec<NodeIndex>,
     pub sink_cells: Vec<NodeIndex>,
+}
+
+pub fn edge_quantity<T: Signed>(
+    from_idx: NodeIndex, to_idx: NodeIndex, q: T
+) -> T {
+    if from_idx < to_idx {
+        q
+    } else {
+        -q
+    }
 }
 
 impl State {

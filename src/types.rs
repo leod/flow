@@ -67,13 +67,17 @@ impl Dir {
         (0..n%4).fold(self, |d, _| d.rotate_cw())
     }
 
-    pub fn apply(self, c: Coords) -> Coords {
+    pub fn delta(self) -> Coords {
         match self {
-            Dir::Left => Coords::new(c.x - 1, c.y),
-            Dir::Right => Coords::new(c.x + 1, c.y),
-            Dir::Up => Coords::new(c.x, c.y - 1),
-            Dir::Down => Coords::new(c.x, c.y + 1)
+            Dir::Left => Coords::new(-1, 0),
+            Dir::Right => Coords::new(1, 0),
+            Dir::Up => Coords::new(0, -1),
+            Dir::Down => Coords::new(0, 1)
         }
+    }
+
+    pub fn apply(self, c: Coords) -> Coords {
+        c + self.delta()
     }
 
     pub fn apply_n(self, c: Coords, n: usize) -> Coords {
