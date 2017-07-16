@@ -86,7 +86,7 @@ impl MainState {
                         Element::Source => {
                             if let &mut Some(ref mut flow) = &mut self.flow {
                                 let node_index = flow.graph.node_index((component_id, 0));
-                                flow.graph.node_mut(node_index).pressure = 0.0;
+                                flow.flow.node_mut(node_index).pressure = 0.0;
                             }
                         }
                         _ => {

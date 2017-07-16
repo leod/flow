@@ -1,9 +1,9 @@
 use circuit::{Element, Circuit, CellId};
 
-use graph::{NodeIndex, GraphState};
+use graph::{NodeIndex, CompactGraph, CompactGraphState};
 
 #[derive(Clone, Copy, Debug)]
-pub struct Connection {
+pub struct Edge {
     pub enabled: bool,
     pub velocity: f64,
     pub old_velocity: f64,
@@ -28,7 +28,9 @@ pub struct Cell {
 }
 
 pub struct State {
-    pub graph: GraphState<CellId, Cell, Connection>,
+    pub graph: CompactGraph<CellId>,
+    pub flow: CompactGraphState<Cell, Edge>,
+    
     pub mut_idx_to_node_idx: Vec<NodeIndex>,
     pub source_cells: Vec<NodeIndex>,
     pub sink_cells: Vec<NodeIndex>,
@@ -36,12 +38,15 @@ pub struct State {
 
 impl State {
     pub fn from_circuit(circuit: &Circuit) -> State {
+        let mut source_cells = Vec::new();
+        let mut sink_cells = Vec::new();
+        
         let mut node_idx_counter = 0;
         let mut mut_idx_counter = 0;
         let mut mut_idx_to_node_idx = Vec::new();
-        let mut source_cells = Vec::new();
-        let mut sink_cells = Vec::new();
-        let graph = GraphState::new(circuit.graph(),
+        
+        let graph = CompactGraph::new(&circuit.graph());
+        let flow = CompactGraphState::new(&circuit.graph(),
             |(component_id, _cell_index), _node| {
                 let component =
                     circuit.components().get(&component_id).unwrap();
@@ -86,7 +91,7 @@ impl State {
                 res
             },
             |_, _, _| {
-                Connection {
+                Edge {
                     enabled: true,
                     velocity: 0.0,
                     old_velocity: 0.0,
@@ -97,6 +102,7 @@ impl State {
             
         State {
             graph: graph,
+            flow: flow,
             mut_idx_to_node_idx: mut_idx_to_node_idx,
             source_cells: source_cells,
             sink_cells: sink_cells,
