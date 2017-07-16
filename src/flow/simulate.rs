@@ -1,6 +1,7 @@
 use rulinalg::matrix::{Matrix, BaseMatrix};
 use rulinalg::vector::Vector;
 
+use circuit::{Element, SwitchType};
 use flow::state::{State, edge_quantity};
 
 #[allow(non_snake_case)]
@@ -33,6 +34,10 @@ fn solve_pressure(state: &mut State) {
             // substract flow on rhs
             // TODO: we have to take care in which direction the flow goes
             let edge = state.flow.edge(edge_idx);
+            if !edge.enabled {
+                continue;
+            }
+            
             b[row_id] -= edge_quantity(node_idx, neigh_node_idx, edge.velocity);
             A[[row_id, row_id]] -= 1.0;
         }
@@ -77,6 +82,32 @@ fn project_velocities(state: &mut State) {
     }
 }
 
+fn update_components(state: &mut State) {
+    for ref component in state.components.iter() {
+        match component.element {
+            Element::Switch(kind) => {
+                let threshold = 10;
+                let enabled = {
+                    let control_node_idx = component.cells[0];
+                    let control_cell = state.flow.node_mut(control_node_idx);
+                    
+                    match kind {
+                        SwitchType::On => control_cell.in_flow > threshold,
+                        SwitchType::Off => control_cell.in_flow < threshold
+                    }
+                };
+                
+                let flow_node_idx = component.cells[1];
+                for &(_, edge_idx) in state.graph.neighbors(flow_node_idx) {
+                    let edge = state.flow.edge_mut(edge_idx);
+                    edge.enabled = enabled;
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 fn flow(state: &mut State) {
     println!("++++++++++++++++++++++++++++++++++++");
     println!("START");
@@ -94,6 +125,8 @@ fn flow(state: &mut State) {
         let cell = state.flow.node_mut(node_idx);
         cell.old_load = cell.load;
         cell.load = 0;
+        cell.in_flow = 0;
+        cell.out_flow = 0;
     }
 
     for edge_idx in 0 .. state.graph.num_edges() {
@@ -137,7 +170,16 @@ fn flow(state: &mut State) {
             println!("cell {0} is giving {1}: {2}% of {3}: {4}",
                 node_idx, neigh_node_idx, rel_vel * 100.0, cell_load, flow);
 
-            state.flow.node_mut(neigh_node_idx).load += flow;
+            {
+                let neigh_node = state.flow.node_mut(neigh_node_idx);
+                neigh_node.load += flow;
+                neigh_node.in_flow += flow;
+            }
+            {
+                let node = state.flow.node_mut(node_idx);
+                node.out_flow += flow;
+            }
+            
             state.flow.edge_mut(edge_idx).flow +=
                 edge_quantity(node_idx, neigh_node_idx, flow as isize);
         }
@@ -169,5 +211,6 @@ fn flow(state: &mut State) {
 pub fn time_step(state: &mut State, _dt: f64) {
     solve_pressure(state);
     project_velocities(state);
+    update_components(state);
     flow(state);
 }
