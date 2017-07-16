@@ -9,7 +9,7 @@ use ggez::graphics::{self, Drawable};
 use types::{Dir, Axis};
 use input::{self, Input};
 use camera::Camera;
-use circuit::{self, Circuit, Action, Element};
+use circuit::{self, Circuit, Action, SwitchType, Element};
 use display::{self, Display};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -140,6 +140,12 @@ impl Hud {
                     input::Keycode::Num3 => {
                         self.change_state(State::PlaceElement {
                             element: Element::Sink,
+                            rotation_cw: 0,
+                        });
+                    }
+                    input::Keycode::Num4 => {
+                        self.change_state(State::PlaceElement {
+                            element: Element::Switch(SwitchType::On),
                             rotation_cw: 0,
                         });
                     }
