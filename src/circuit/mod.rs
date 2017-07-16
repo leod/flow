@@ -7,7 +7,7 @@ use graph::NeighborGraph;
 
 pub use types::Coords;
 pub use self::action::Action;
-pub use self::component::{Element, Component};
+pub use self::component::{SwitchType, Element, Component};
 
 pub type ComponentId = usize;
 

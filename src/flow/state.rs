@@ -28,14 +28,16 @@ pub struct Cell {
     // Blobs moving through the graph
     pub load: usize,
     pub old_load: usize,
+    pub in_flow: usize,
+    pub out_flow: usize,
 
     // Index in the matrix for pressure solving
     pub mut_idx: Option<usize>,
 }
 
 pub struct Component {
-    element: Element,
-    cells: Vec<NodeIndex>
+    pub element: Element,
+    pub cells: Vec<NodeIndex>
 }
 
 pub struct State {
@@ -87,7 +89,7 @@ impl State {
         
         let graph = CompactGraph::new(&circuit.graph());
         let flow = CompactGraphState::new(&circuit.graph(),
-            |(component_id, _cell_index), _node| {
+            |(component_id, cell_index), _node| {
                 let component =
                     circuit.components().get(&component_id).unwrap();
 
@@ -98,6 +100,8 @@ impl State {
                             pressure: 100.0,
                             load: 0,
                             old_load: 0,
+                            in_flow: 0,
+                            out_flow: 0,
                             mut_idx: None,
                         };
                         source_cells.push(node_idx_counter);
@@ -109,6 +113,8 @@ impl State {
                             pressure: 0.0,
                             load: 0,
                             old_load: 0,
+                            in_flow: 0,
+                            out_flow: 0,
                             mut_idx: None,
                         };
                         sink_cells.push(node_idx_counter);
@@ -120,6 +126,8 @@ impl State {
                             pressure: 0.0,
                             load: 0,
                             old_load: 0,
+                            in_flow: 0,
+                            out_flow: 0,
                             mut_idx: Some(mut_idx_counter),
                         };
                         mut_idx_to_node_idx.push(node_idx_counter);
@@ -127,6 +135,14 @@ impl State {
                         new_cell
                     },
                 };
+                
+                // Control cell of switch is a sink
+                if let Element::Switch(_) = component.element {
+                    if cell_index == 0 {
+                        sink_cells.push(node_idx_counter);
+                    }
+                }
+                
                 node_idx_counter += 1;
                 res
             },
@@ -139,12 +155,12 @@ impl State {
                     flow: 0
                 }
             });
-            
+        
         let components = circuit.components().iter().map(
             |(&id, component)| {
                 State::new_component(circuit, &graph, component)
             }).collect();
-            
+        
         State {
             graph: graph,
             flow: flow,
