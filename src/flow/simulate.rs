@@ -1,20 +1,7 @@
 use rulinalg::matrix::{Matrix, BaseMatrix};
 use rulinalg::vector::Vector;
 
-use num::Signed;
-
-use graph::NodeIndex;
-use flow::state::{self, State};
-
-pub fn edge_quantity<T: Signed>(
-    from_idx: NodeIndex, to_idx: NodeIndex, q: T
-) -> T {
-    if from_idx < to_idx {
-        q
-    } else {
-        -q
-    }
-}
+use flow::state::{State, edge_quantity};
 
 #[allow(non_snake_case)]
 fn solve_pressure(state: &mut State) {
@@ -144,10 +131,11 @@ fn flow(state: &mut State) {
 
             let rel_vel = velocity / out_flow_sum;
 
-            println!("cell {0} is giving {1}: {2} % of {3}", node_idx, neigh_node_idx, rel_vel, cell_load);
-
             // TODO: for now, accept that some load is lost in rounding 
             let flow = (rel_vel * cell_load as f64).floor() as usize;
+            
+            println!("cell {0} is giving {1}: {2}% of {3}: {4}",
+                node_idx, neigh_node_idx, rel_vel * 100.0, cell_load, flow);
 
             state.flow.node_mut(neigh_node_idx).load += flow;
             state.flow.edge_mut(edge_idx).flow +=

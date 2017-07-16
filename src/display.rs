@@ -167,13 +167,13 @@ impl Display {
         ctx: &mut Context,
         camera: &Camera,
         circuit: &Circuit,
-        flow: &flow::State
+        state: &flow::State
     ) -> GameResult<()> {
         for (&id, ref c) in circuit.components().iter() {
             for (cell_index, _pos) in c.cells.iter().enumerate() {
                 let cell_id = (id, cell_index);
-                let node_index = flow.graph.node_index(cell_id);
-                let cell = flow.flow.node(node_index);
+                let node_index = state.graph.node_index(cell_id);
+                let cell = state.flow.node(node_index);
 
                 let p = c.cells[cell_index].cast();
                 let p_t = camera.transform(p * EDGE_LENGTH);
@@ -186,10 +186,78 @@ impl Display {
                 };
 
                 let pressure = cell.pressure as f32;
-                graphics::set_color(ctx, graphics::Color::new(1.0 * (pressure/100.0), 0.0, 1.0 * (1.0 - pressure/100.0), 1.0))?;
+                graphics::set_color(ctx,
+                    graphics::Color::new(1.0 * (pressure/100.0),
+                                         0.0,
+                                         1.0 * (1.0 - pressure/100.0),
+                                         1.0))?;
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
             }
         }
+        
+        graphics::set_color(ctx, graphics::Color::new(1.0, 0.4, 0.0, 1.0))?;
+        
+        let max_size = EDGE_LENGTH / 4.0;
+        
+        for (&(cell_id_a, cell_id_b), &_edge) in circuit.graph().edges().iter() {
+            let node_index_a = state.graph.node_index(cell_id_a);
+            let node_index_b = state.graph.node_index(cell_id_b);
+            
+            let a_p = *circuit.graph().get_node(cell_id_a).unwrap();
+            let b_p = *circuit.graph().get_node(cell_id_b).unwrap();
+            
+            let edge_index = state.graph.edge_index(cell_id_a, cell_id_b);
+            let edge = state.flow.edge(edge_index);
+            
+            let percent = edge.flow.abs() as f32 / 100000.0; // TODO
+            let size = max_size * percent;
+            
+            // Order from/to according to node indices
+            let (from_p, to_p) =
+                if node_index_a < node_index_b {
+                    (a_p, b_p)
+                } else {
+                    (b_p, a_p)
+                };
+            
+            // Flip arrow if flow is negative
+            let (from_p, to_p) =
+                if edge.flow > 0 {
+                    (from_p, to_p)
+                } else {
+                    (to_p, from_p)
+                };
+            
+            let dir = Dir::from_coords(from_p, to_p);
+            let orth_dir = dir.rotate_cw();
+            
+            // Corner position of the nodes
+            let start_p = from_p.cast() + dir.delta().cast() / 4.0;
+            let end_p = to_p.cast() + dir.invert().delta().cast() / 4.0;
+            
+            let x = start_p + orth_dir.delta().cast() * size;
+            let y = start_p + orth_dir.invert().delta().cast() * size;
+            let z = end_p;
+            
+            let x_t = camera.transform(x * EDGE_LENGTH);
+            let y_t = camera.transform(y * EDGE_LENGTH);
+            let z_t = camera.transform(z * EDGE_LENGTH);
+            
+            let vertices = vec![
+                graphics::Point {
+                    x: x_t.x, y: x_t.y
+                },
+                graphics::Point {
+                    x: y_t.x, y: y_t.y
+                },
+                graphics::Point {
+                    x: z_t.x, y: z_t.y
+                }
+            ];
+            
+            graphics::polygon(ctx, graphics::DrawMode::Fill, &vertices)?;
+        }
+        
         Ok(())
     }
 }
