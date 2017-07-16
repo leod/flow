@@ -3,7 +3,7 @@ mod component;
 
 use std::collections::HashMap;
 
-use graph::NeighboredGraph;
+use graph::NeighborGraph;
 
 pub use types::Coords;
 pub use self::action::Action;
@@ -29,13 +29,15 @@ pub struct Edge {
 
 type Point = (ComponentId, Option<usize>);
 
+pub type Graph = NeighborGraph<CellId, Coords, Edge>;
+
 #[derive(Clone)]
 pub struct Circuit {
     // Components of the circuit
     components: HashMap<ComponentId, Component>,
 
     // Cells, and edges between them.
-    graph: NeighboredGraph<CellId, Coords, Edge>,
+    graph: Graph,
 
     // Grid coords that are occupied by components. Note that this can be
     // completely derived from the components. The point of this is to make it
@@ -50,7 +52,7 @@ impl Circuit {
     pub fn empty() -> Circuit {
         Circuit {
             components: HashMap::new(),
-            graph: NeighboredGraph::new(),
+            graph: Graph::new(),
             points: HashMap::new(),
             next_component_id: 0,
         }
@@ -60,7 +62,7 @@ impl Circuit {
         &self.points
     }
 
-    pub fn graph(&self) -> &NeighboredGraph<CellId, Coords, Edge> {
+    pub fn graph(&self) -> &NeighborGraph<CellId, Coords, Edge> {
         &self.graph
     }
 

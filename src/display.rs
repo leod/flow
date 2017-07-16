@@ -174,7 +174,7 @@ impl Display {
             for (cell_index, _pos) in c.cells.iter().enumerate() {
                 let cell_id = (id, cell_index);
                 let node_index = flow.graph.node_index(cell_id);
-                let cell = flow.graph.node(node_index);
+                let cell = flow.flow.node(node_index);
 
                 let p = c.cells[cell_index].cast();
                 let p_t = camera.transform(p * EDGE_LENGTH);
