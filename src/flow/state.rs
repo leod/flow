@@ -78,6 +78,29 @@ impl State {
             cells: cells
         }
     }
+    
+    pub fn update_mut_indices(&mut self) {
+        let mut mut_idx_to_node_idx = Vec::new();
+
+        for node_idx in 0 .. self.graph.num_nodes() {
+            let is_mut = {
+                let node = self.flow.node(node_idx);
+                let any_neighbor = self.graph.neighbors(node_idx).iter().any(
+                    |&(_, edge_idx)| self.flow.edge(edge_idx).enabled);
+                !node.bound_pressure && any_neighbor
+            };
+            
+            self.flow.node_mut(node_idx).mut_idx =
+                if is_mut {
+                    mut_idx_to_node_idx.push(node_idx);
+                    Some(mut_idx_to_node_idx.len()-1)
+                } else {
+                    None
+                };
+        }
+        
+        self.mut_idx_to_node_idx = mut_idx_to_node_idx;
+    }
 
     pub fn from_circuit(circuit: &Circuit) -> State {
         let mut source_cells = Vec::new();
@@ -93,6 +116,7 @@ impl State {
                 let component =
                     circuit.components().get(&component_id).unwrap();
 
+                // TODO: Clean up
                 let res = match component.element {
                     Element::Source => {
                         let new_cell = Cell {
@@ -121,17 +145,32 @@ impl State {
                         new_cell
                     },
                     _ => {
+                        let is_mut = 
+                            if let Element::Switch(_) = component.element {
+                                cell_index != 0
+                            } else {
+                                true
+                            };
+                        
+                        let mut_idx =
+                            if is_mut {
+                                mut_idx_to_node_idx.push(node_idx_counter);
+                                mut_idx_counter += 1;
+                                Some(mut_idx_counter-1)
+                            } else {
+                                None
+                            };
+                        
                         let new_cell = Cell {
-                            bound_pressure: false,
+                            bound_pressure: !is_mut,
                             pressure: 0.0,
                             load: 0,
                             old_load: 0,
                             in_flow: 0,
                             out_flow: 0,
-                            mut_idx: Some(mut_idx_counter),
+                            mut_idx: mut_idx
                         };
-                        mut_idx_to_node_idx.push(node_idx_counter);
-                        mut_idx_counter += 1;
+                        
                         new_cell
                     },
                 };
