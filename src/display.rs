@@ -177,7 +177,6 @@ impl Display {
                                  camera.transform_distance(size.x / 2.0 - 0.05),
                                  50)?;
             }
-            _ => {}
         }
         
         Ok(())

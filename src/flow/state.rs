@@ -196,7 +196,7 @@ impl State {
             });
         
         let components = circuit.components().iter().map(
-            |(&id, component)| {
+            |(&_id, component)| {
                 State::new_component(circuit, &graph, component)
             }).collect();
         
