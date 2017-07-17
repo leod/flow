@@ -116,21 +116,16 @@ impl Display {
                 let control_p_t =
                     camera.transform(c.cells[0].cast() * EDGE_LENGTH);
                 let flow_p_t = camera.transform(c.cells[1].cast() * EDGE_LENGTH);
-                
-                let control_draw_mode = match kind {
-                    SwitchType::On => graphics::DrawMode::Fill,
-                    SwitchType::Off => graphics::DrawMode::Line
-                };
 
                 graphics::circle(ctx,
-                    control_draw_mode,
+                    graphics::DrawMode::Fill,
                     graphics::Point {
                         x: control_p_t.x,
                         y: control_p_t.y
                     },
                     camera.transform_distance(HALF_EDGE_LENGTH * 0.75),
                     50)?;
-                
+
                 let r = graphics::Rect {
                     x: flow_p_t.x,
                     y: flow_p_t.y,
@@ -138,6 +133,19 @@ impl Display {
                     h: camera.transform_distance(EDGE_LENGTH)
                 };
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+                            
+                if kind == SwitchType::Off {
+                    graphics::set_color(ctx,
+                        graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
+                    graphics::circle(ctx,
+                        graphics::DrawMode::Fill,
+                        graphics::Point {
+                            x: control_p_t.x,
+                            y: control_p_t.y
+                        },
+                        camera.transform_distance(HALF_EDGE_LENGTH * 0.7),
+                        50)?;
+                }
             }
             Element::Source | Element::Sink => {
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
