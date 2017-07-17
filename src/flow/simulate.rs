@@ -166,7 +166,11 @@ fn flow(state: &mut State) {
         for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx) {
             let velocity = {
                 let edge = state.flow.edge(edge_idx);
-                edge_quantity(node_idx, neigh_node_idx, edge.velocity)
+                if edge.enabled {
+                    edge_quantity(node_idx, neigh_node_idx, edge.velocity)
+                } else {
+                    0.0
+                }
             };
             if velocity <= 0.0 {
                 continue;
@@ -219,11 +223,9 @@ fn flow(state: &mut State) {
 }
 
 pub fn time_step(state: &mut State, _dt: f64) {
-    
+    update_components(state);
     state.update_mut_indices();
     solve_pressure(state);
-    
     project_velocities(state);
-    update_components(state);
     flow(state);
 }

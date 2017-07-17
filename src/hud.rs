@@ -149,6 +149,12 @@ impl Hud {
                             rotation_cw: 0,
                         });
                     }
+                    input::Keycode::Num5 => {
+                        self.change_state(State::PlaceElement {
+                            element: Element::Switch(SwitchType::Off),
+                            rotation_cw: 0,
+                        });
+                    }
                     _ => {}
                 }
 
