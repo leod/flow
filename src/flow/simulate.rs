@@ -7,9 +7,20 @@ use flow::state::{State, edge_quantity};
 #[allow(non_snake_case)]
 fn solve_pressure(state: &mut State) {
     let num_v = state.mut_idx_to_node_idx.len();
+    
+    if num_v == 0 {
+        return;
+    }
+    
     let mut A = Matrix::<f64>::zeros(num_v, num_v); // system
     let mut b = Vector::<f64>::zeros(num_v); // rhs
 
+    for node_idx in 0 .. state.graph.num_nodes() {
+        if !state.flow.node(node_idx).bound_pressure {
+            state.flow.node_mut(node_idx).pressure = 0.0;
+        }
+    }
+    
     // build rows
     for (mut_idx, &node_idx) in state.mut_idx_to_node_idx.iter().enumerate() { 
         let row_id = mut_idx;
@@ -20,6 +31,11 @@ fn solve_pressure(state: &mut State) {
         // step through neigbors -> either non-zero entry in matrix or add to rhs
         let neighbors = state.graph.neighbors(node_idx);
         for &(neigh_node_idx, edge_idx) in neighbors {
+            let edge = state.flow.edge(edge_idx);
+            if !edge.enabled {
+                continue;
+            }
+        
             let neigh_node = state.flow.node(neigh_node_idx);
             if let Some(neigh_mut_idx) = neigh_node.mut_idx {
                 // mutable neighbor -> need to compute pressure
@@ -32,13 +48,7 @@ fn solve_pressure(state: &mut State) {
             }
 
             // substract flow on rhs
-            // TODO: we have to take care in which direction the flow goes
-            let edge = state.flow.edge(edge_idx);
-            if !edge.enabled {
-                continue;
-            }
-            
-            b[row_id] -= edge_quantity(node_idx, neigh_node_idx, edge.velocity);
+            //b[row_id] -= edge_quantity(node_idx, neigh_node_idx, edge.velocity);
             A[[row_id, row_id]] -= 1.0;
         }
     }
@@ -65,7 +75,7 @@ fn solve_pressure(state: &mut State) {
         state.flow.node_mut(node_idx).pressure = x[mut_idx];
     }
 
-    //println!("pressures: {:?}", (0..state.graph.num_nodes()).map(|i| state.graph.node(i).pressure).collect::<Vec<_>>());
+    //println!("pressures: {:?}", (0..state.graph.num_nodes()).map(|i| state.flow.node(i).pressure).collect::<Vec<_>>());
 }
 
 fn project_velocities(state: &mut State) {
@@ -109,7 +119,7 @@ fn update_components(state: &mut State) {
 }
 
 fn flow(state: &mut State) {
-    println!("++++++++++++++++++++++++++++++++++++");
+    /*println!("++++++++++++++++++++++++++++++++++++");
     println!("START");
     println!("++++++++++++++++++++++++++++++++++++");
     for node_idx in 0 .. state.graph.num_nodes() {
@@ -118,7 +128,7 @@ fn flow(state: &mut State) {
             state.flow.node(node_idx).load,
             state.flow.node(node_idx).mut_idx);
     }
-    println!("++++++++++++++++++++++++++++++++++++");
+    println!("++++++++++++++++++++++++++++++++++++");*/
 
     // backup old loads we will override with accumulation of neighbors
     for node_idx in 0 .. state.graph.num_nodes() {
@@ -144,7 +154,7 @@ fn flow(state: &mut State) {
                 let edge = state.flow.edge(edge_idx);
                 let edge_vel =
                     edge_quantity(node_idx, neigh_node_idx, edge.velocity);
-                if edge_vel > 0.0 { edge_vel } else { 0.0 }
+                if edge.enabled && edge_vel > 0.0 { edge_vel } else { 0.0 }
             };
         }
 
@@ -167,8 +177,8 @@ fn flow(state: &mut State) {
             // TODO: for now, accept that some load is lost in rounding 
             let flow = (rel_vel * cell_load as f64).floor() as usize;
             
-            println!("cell {0} is giving {1}: {2}% of {3}: {4}",
-                node_idx, neigh_node_idx, rel_vel * 100.0, cell_load, flow);
+            /*println!("cell {0} is giving {1}: {2}% of {3}: {4}",
+                node_idx, neigh_node_idx, rel_vel * 100.0, cell_load, flow);*/
 
             {
                 let neigh_node = state.flow.node_mut(neigh_node_idx);
@@ -195,7 +205,7 @@ fn flow(state: &mut State) {
         cell.load = 0;
     }
    
-    println!("++++++++++++++++++++++++++++++++++++");
+    /*println!("++++++++++++++++++++++++++++++++++++");
     println!("END");
     println!("++++++++++++++++++++++++++++++++++++");
     for node_idx in 0 .. state.graph.num_nodes() {
@@ -205,11 +215,14 @@ fn flow(state: &mut State) {
             state.flow.node(node_idx).mut_idx);
 
     }
-    println!("++++++++++++++++++++++++++++++++++++");
+    println!("++++++++++++++++++++++++++++++++++++");*/
 }
 
 pub fn time_step(state: &mut State, _dt: f64) {
+    
+    state.update_mut_indices();
     solve_pressure(state);
+    
     project_velocities(state);
     update_components(state);
     flow(state);

@@ -236,6 +236,16 @@ impl Display {
             let edge_index = state.graph.edge_index(cell_id_a, cell_id_b);
             let edge = state.flow.edge(edge_index);
             
+            if edge.enabled {
+                let a_t = camera.transform(a_p.cast() * EDGE_LENGTH);
+                let b_t = camera.transform(b_p.cast() * EDGE_LENGTH);
+
+                let a_point = graphics::Point::new(a_t.x, a_t.y);
+                let b_point = graphics::Point::new(b_t.x, b_t.y);
+
+                graphics::line(ctx, &vec![a_point, b_point])?;
+            }
+            
             let percent = edge.flow.abs() as f32 / 100000.0; // TODO
             let size = max_size * percent;
             
