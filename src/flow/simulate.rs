@@ -96,10 +96,10 @@ fn update_components(state: &mut State) {
     for ref component in state.components.iter() {
         match component.element {
             Element::Switch(kind) => {
-                let threshold = 10;
+                let threshold = 0.01;
                 let enabled = {
                     let control_node_idx = component.cells[0];
-                    let control_cell = state.flow.node_mut(control_node_idx);
+                    let control_cell = state.flow.node(control_node_idx);
                     
                     match kind {
                         SwitchType::On => control_cell.in_flow > threshold,
@@ -134,13 +134,13 @@ fn flow(state: &mut State) {
     for node_idx in 0 .. state.graph.num_nodes() {
         let cell = state.flow.node_mut(node_idx);
         cell.old_load = cell.load;
-        cell.load = 0;
-        cell.in_flow = 0;
-        cell.out_flow = 0;
+        //cell.load = 0;
+        cell.in_flow = 0.0;
+        cell.out_flow = 0.0;
     }
 
     for edge_idx in 0 .. state.graph.num_edges() {
-        state.flow.edge_mut(edge_idx).flow = 0;
+        state.flow.edge_mut(edge_idx).flow = 0.0;
     }
 
     for node_idx in 0 .. state.graph.num_nodes() {
@@ -159,10 +159,6 @@ fn flow(state: &mut State) {
         }
 
         // distribute our load to neighbors respecting relative flow
-        if out_flow_sum < 0.000001 {
-            continue;
-        }
-        
         for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx) {
             let velocity = {
                 let edge = state.flow.edge(edge_idx);
@@ -179,10 +175,10 @@ fn flow(state: &mut State) {
             let rel_vel = velocity / out_flow_sum;
 
             // TODO: for now, accept that some load is lost in rounding 
-            let flow = (rel_vel * cell_load as f64).floor() as usize;
+            let flow = (rel_vel * cell_load).min(velocity);
             
-            /*println!("cell {0} is giving {1}: {2}% of {3}: {4}",
-                node_idx, neigh_node_idx, rel_vel * 100.0, cell_load, flow);*/
+            println!("cell {0} is giving {1}: {2}% of {3}: {4}",
+                node_idx, neigh_node_idx, rel_vel * 100.0, cell_load, flow);
 
             {
                 let neigh_node = state.flow.node_mut(neigh_node_idx);
@@ -191,22 +187,23 @@ fn flow(state: &mut State) {
             }
             {
                 let node = state.flow.node_mut(node_idx);
+                node.load -= flow;
                 node.out_flow += flow;
             }
             
             state.flow.edge_mut(edge_idx).flow +=
-                edge_quantity(node_idx, neigh_node_idx, flow as isize);
+                edge_quantity(node_idx, neigh_node_idx, flow);
         }
     }
 
     // set the source/sink loads to a default value (minor TODO: maybe this should be a global setting?)
     for i in 0 .. state.source_cells.len() {
         let cell = state.flow.node_mut(state.source_cells[i]);
-        cell.load = 100000;
+        cell.load = 100000.0;   
     }
     for i in 0 .. state.sink_cells.len() {
         let cell = state.flow.node_mut(state.sink_cells[i]);
-        cell.load = 0;
+        cell.load = 0.0;
     }
    
     /*println!("++++++++++++++++++++++++++++++++++++");
