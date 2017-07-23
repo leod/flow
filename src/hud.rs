@@ -27,7 +27,7 @@ enum State {
 }
 
 pub struct Hud {
-    font: graphics::Font,
+    pub font: graphics::Font,
 
     state: State,
     undo: Vec<Action>,
