@@ -117,6 +117,7 @@ impl event::EventHandler for MainState {
 
         if let &Some(ref state) = &self.flow {
             self.display.draw_flow(ctx, &self.camera, &self.circuit, state)?;
+            self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, state)?;
         } else {
             self.hud.draw(ctx, &self.camera, &self.circuit, &self.display)?;
         }

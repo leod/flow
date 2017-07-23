@@ -1,7 +1,7 @@
 use cgmath::{Zero, Vector2};
 
 use ggez::{GameResult, Context};
-use ggez::graphics;
+use ggez::graphics::{self, Drawable};
 
 use types::Dir;
 use camera::Camera;
@@ -252,7 +252,7 @@ impl Display {
                 graphics::line(ctx, &vec![a_point, b_point])?;
             }
             
-            let percent = edge.flow.abs() as f32 / 100.0; // TODO
+            let percent = edge.flow.abs() as f32 / 10.0; // TODO
             let size = max_size * percent;
             
             // Order from/to according to node indices
@@ -299,6 +299,34 @@ impl Display {
             ];
             
             graphics::polygon(ctx, graphics::DrawMode::Fill, &vertices)?;
+        }
+        
+        Ok(())
+    }
+    
+    pub fn draw_flow_debug(
+        &self,
+        ctx: &mut Context,
+        font: &graphics::Font,
+        camera: &Camera,
+        circuit: &Circuit,
+        state: &flow::State
+    ) -> GameResult<()> {
+        graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
+    
+        for (&id, ref c) in circuit.components().iter() {
+            for (cell_index, _pos) in c.cells.iter().enumerate() {
+                let cell_id = (id, cell_index);
+                let node_index = state.graph.node_index(cell_id);
+                let cell = state.flow.node(node_index);
+
+                let p = c.cells[cell_index].cast() - Vector2::new(0.0, 0.5);
+                let p_t = camera.transform(p * EDGE_LENGTH);
+                
+                let s = format!("{:.2}", cell.load);
+                let text = graphics::Text::new(ctx, &s, &font)?;
+                text.draw(ctx, graphics::Point { x: p_t.x, y: p_t.y }, 0.0)?;
+            }
         }
         
         Ok(())
