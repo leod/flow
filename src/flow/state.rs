@@ -14,7 +14,7 @@ pub struct Edge {
     pub old_velocity: f64,
 
     // Flow in the last tick from the smaller node index to the larger node index
-    pub flow: isize,
+    pub flow: f64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -26,10 +26,10 @@ pub struct Cell {
     pub pressure: f64,
 
     // Blobs moving through the graph
-    pub load: usize,
-    pub old_load: usize,
-    pub in_flow: usize,
-    pub out_flow: usize,
+    pub load: f64,
+    pub old_load: f64,
+    pub in_flow: f64,
+    pub out_flow: f64,
 
     // Index in the matrix for pressure solving
     pub mut_idx: Option<usize>,
@@ -122,10 +122,10 @@ impl State {
                         let new_cell = Cell {
                             bound_pressure: true,
                             pressure: 100.0,
-                            load: 0,
-                            old_load: 0,
-                            in_flow: 0,
-                            out_flow: 0,
+                            load: 0.0,
+                            old_load: 0.0,
+                            in_flow: 0.0,
+                            out_flow: 0.0,
                             mut_idx: None,
                         };
                         source_cells.push(node_idx_counter);
@@ -135,10 +135,10 @@ impl State {
                         let new_cell = Cell {
                             bound_pressure: true,
                             pressure: 0.0,
-                            load: 0,
-                            old_load: 0,
-                            in_flow: 0,
-                            out_flow: 0,
+                            load: 0.0,
+                            old_load: 0.0,
+                            in_flow: 0.0,
+                            out_flow: 0.0,
                             mut_idx: None,
                         };
                         sink_cells.push(node_idx_counter);
@@ -164,10 +164,10 @@ impl State {
                         let new_cell = Cell {
                             bound_pressure: !is_mut,
                             pressure: 0.0,
-                            load: 0,
-                            old_load: 0,
-                            in_flow: 0,
-                            out_flow: 0,
+                            load: 0.0,
+                            old_load: 0.0,
+                            in_flow: 0.0,
+                            out_flow: 0.0,
                             mut_idx: mut_idx
                         };
                         
@@ -191,7 +191,7 @@ impl State {
                     enabled: true,
                     velocity: 0.0,
                     old_velocity: 0.0,
-                    flow: 0
+                    flow: 0.0
                 }
             });
         

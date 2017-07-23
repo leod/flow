@@ -182,7 +182,6 @@ impl Display {
         Ok(())
     }
 
-
     pub fn draw_components(
         &self,
         ctx: &mut Context,
@@ -253,7 +252,7 @@ impl Display {
                 graphics::line(ctx, &vec![a_point, b_point])?;
             }
             
-            let percent = edge.flow.abs() as f32 / 100000.0; // TODO
+            let percent = edge.flow.abs() as f32 / 100.0; // TODO
             let size = max_size * percent;
             
             // Order from/to according to node indices
@@ -266,7 +265,7 @@ impl Display {
             
             // Flip arrow if flow is negative
             let (from_p, to_p) =
-                if edge.flow > 0 {
+                if edge.flow > 0.0 {
                     (from_p, to_p)
                 } else {
                     (to_p, from_p)
