@@ -3,11 +3,15 @@ use flow;
 use level::{Level, Outcome, LevelImpl};
 
 pub struct TestLevel {
-
+    b: bool
 }
 
 impl LevelImpl for TestLevel {
-    fn time_step(&mut self, flow: &flow::State) -> Option<Outcome> {
+    fn time_step(&mut self, flow: &mut flow::State) -> Option<Outcome> {
+        for &idx in flow.input_cells.iter() {
+            flow.flow.node_mut(idx).enabled = self.b;
+        }
+        self.b = !self.b;
         None
     }
 }
@@ -18,6 +22,6 @@ pub fn test_level() -> Level {
         input_pos: circuit::Coords::new(0, 0),
         output_size: 2,
         output_pos: circuit::Coords::new(10, 0),
-        create_impl: Box::new(|| Box::new(TestLevel{}))
+        create_impl: Box::new(|| Box::new(TestLevel { b: false }))
     }
 }

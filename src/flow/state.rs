@@ -26,6 +26,7 @@ pub struct Cell {
     pub pressure: f64,
 
     // Blobs moving through the graph
+    pub enabled: bool,
     pub load: f64,
     pub old_load: f64,
     pub in_flow: f64,
@@ -136,10 +137,12 @@ impl State {
                         }
                     }
                     Element::Input { size } => {
+                        source_cells.push(node_idx_counter);
                         input_cells.push(node_idx_counter);
                         Some(100.0)
                     }
                     Element::Output { size } => {
+                        sink_cells.push(node_idx_counter);
                         output_cells.push(node_idx_counter);
                         Some(0.0)
                     }
@@ -153,6 +156,7 @@ impl State {
                 Cell {
                     bound_pressure: bound_pressure,
                     pressure: init_pressure,
+                    enabled: true,
                     load: 0.0,
                     old_load: 0.0,
                     in_flow: 0.0,
