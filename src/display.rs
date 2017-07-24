@@ -209,6 +209,31 @@ impl Display {
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, r_small)?;
             }
             Element::Output { size } => {
+                let size = (c.size().cast() + Vector2::new(0.5, 0.5))
+                    * EDGE_LENGTH;
+                let size_small = (c.size().cast() + Vector2::new(0.25, 0.25))
+                    * EDGE_LENGTH;
+                let shift = c.size().cast() * HALF_EDGE_LENGTH;
+                let trans_size = camera.transform_delta(size);
+                let trans_size_small = camera.transform_delta(size_small);
+                let trans_shift = camera.transform_delta(shift);
+                let center = p_t + trans_shift;
+
+                let r = graphics::Rect {
+                    x: center.x,
+                    y: center.y,
+                    w: trans_size.x,
+                    h: trans_size.y
+                };
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+                
+                let r_small = graphics::Rect {
+                    x: center.x,
+                    y: center.y,
+                    w: trans_size_small.x,
+                    h: trans_size_small.y
+                };
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r_small)?;
             }
         }
         
