@@ -26,7 +26,7 @@ fn solve_pressure(state: &mut State) {
         let row_id = mut_idx;
 
         // here the blobs have an impact, we add pressure on the rhs of each row
-        b[row_id] -= state.flow.node(node_idx).load as f64;
+        //b[row_id] -= state.flow.node(node_idx).load as f64;
 
         // step through neigbors -> either non-zero entry in matrix or add to rhs
         let neighbors = state.graph.neighbors(node_idx);
@@ -129,7 +129,17 @@ fn flow(state: &mut State) {
             state.flow.node(node_idx).mut_idx);
     }
     println!("++++++++++++++++++++++++++++++++++++");*/
-
+    
+    // set the source/sink loads to a default value (minor TODO: maybe this should be a global setting?)
+    for i in 0 .. state.source_cells.len() {
+        let cell = state.flow.node_mut(state.source_cells[i]);
+        cell.load = if cell.enabled { 100000.0 } else { 0.0 };   
+    }
+    for i in 0 .. state.sink_cells.len() {
+        let cell = state.flow.node_mut(state.sink_cells[i]);
+        cell.load = 0.0;
+    }
+    
     // backup old loads we will override with accumulation of neighbors
     for node_idx in 0 .. state.graph.num_nodes() {
         let cell = state.flow.node_mut(node_idx);
@@ -196,16 +206,6 @@ fn flow(state: &mut State) {
         }
     }
 
-    // set the source/sink loads to a default value (minor TODO: maybe this should be a global setting?)
-    for i in 0 .. state.source_cells.len() {
-        let cell = state.flow.node_mut(state.source_cells[i]);
-        cell.load = 100000.0;   
-    }
-    for i in 0 .. state.sink_cells.len() {
-        let cell = state.flow.node_mut(state.sink_cells[i]);
-        cell.load = 0.0;
-    }
-   
     /*println!("++++++++++++++++++++++++++++++++++++");
     println!("END");
     println!("++++++++++++++++++++++++++++++++++++");

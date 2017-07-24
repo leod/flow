@@ -17,7 +17,7 @@ pub enum Outcome {
 }
 
 pub trait LevelImpl {
-    fn time_step(&mut self, flow: &flow::State) -> Option<Outcome>;
+    fn time_step(&mut self, flow: &mut flow::State) -> Option<Outcome>;
 }
 
 pub struct LevelState {
@@ -57,7 +57,8 @@ impl Level {
 
 impl LevelState {
     pub fn time_step(&mut self) -> Option<Outcome> {
+        let outcome = self.level_impl.time_step(&mut self.flow);
         flow::time_step(&mut self.flow, 0.0);
-        self.level_impl.time_step(&self.flow)
+        outcome
     }
 }
