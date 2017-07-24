@@ -13,6 +13,8 @@ mod input;
 mod canon_map;
 mod flow;
 mod graph;
+mod level;
+mod test_level;
 //#[cfg(test)] mod tests;
 
 use std::time::Duration;
@@ -30,10 +32,12 @@ use hud::Hud;
 use camera::Camera;
 use camera_input::CameraInput;
 use input::{Input, Keycode};
+use level::{Level, LevelState};
 
 struct MainState {
     circuit: Circuit,
-    flow: Option<flow::State>,
+    level: Level,
+    level_state: Option<LevelState>,
 
     frames: usize,
 
@@ -47,9 +51,11 @@ struct MainState {
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         graphics::set_background_color(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
+        let level = test_level::test_level();
         let s = MainState {
-            circuit: Circuit::empty(),
-            flow: None,
+            circuit: level.new_circuit(),
+            level: level,
+            level_state: None,
             frames: 0,
             hud: Hud::new(ctx)?,
             display: Display::new(),
@@ -61,7 +67,7 @@ impl MainState {
 
     fn input_event(&mut self, input: &Input) {
         // Only allow changing the circuit when not simulating
-        if self.flow.is_none() {
+        if self.level_state.is_none() {
             self.hud.input_event(&mut self.circuit, &self.camera, input);
         }
 
@@ -69,29 +75,15 @@ impl MainState {
 
         match input {
             &Input::KeyDown { keycode: Keycode::Space, keymod: _, repeat: _ } => {
-                self.flow = match &self.flow {
+                self.level_state = match &self.level_state {
                     &Some(_) => None,
-                    &None => Some(flow::State::from_circuit(&self.circuit))
+                    &None => Some(self.level.new_state(&self.circuit))
                 }
 
             }
             &Input::KeyDown { keycode: Keycode::T, keymod: _, repeat: _ } => {
-                if let &mut Some(ref mut flow) = &mut self.flow {
-                    flow::time_step(flow, 42.0);
-                }
-            }
-            &Input::KeyDown { keycode: Keycode::R, keymod: _, repeat: _ } => {
-                for (&component_id, component) in self.circuit.components().iter() {
-                    match component.element {
-                        Element::Source => {
-                            if let &mut Some(ref mut flow) = &mut self.flow {
-                                let node_index = flow.graph.node_index((component_id, 0));
-                                flow.flow.node_mut(node_index).pressure = 0.0;
-                            }
-                        }
-                        _ => {
-                        }
-                    }
+                if let &mut Some(ref mut level_state) = &mut self.level_state {
+                    level_state.time_step();
                 }
             }
             _ => {}
@@ -115,9 +107,10 @@ impl event::EventHandler for MainState {
         self.display.draw_grid_edges(ctx, &self.camera, &self.circuit)?;
         self.display.draw_components(ctx, &self.camera, &self.circuit)?;
 
-        if let &Some(ref state) = &self.flow {
-            self.display.draw_flow(ctx, &self.camera, &self.circuit, state)?;
-            self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, state)?;
+        if let &Some(ref level_state) = &self.level_state {
+            let flow = &level_state.flow;
+            self.display.draw_flow(ctx, &self.camera, &self.circuit, flow)?;
+            self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
         } else {
             self.hud.draw(ctx, &self.camera, &self.circuit, &self.display)?;
         }

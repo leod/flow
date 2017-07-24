@@ -182,9 +182,11 @@ impl Display {
             Element::Input { size } => {
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                     * EDGE_LENGTH;
+                let size_small = (c.size().cast() + Vector2::new(0.25, 0.25))
+                    * EDGE_LENGTH;
                 let shift = c.size().cast() * HALF_EDGE_LENGTH;
                 let trans_size = camera.transform_delta(size);
-                let trans_size_small = camera.transform_delta(size * 0.9);
+                let trans_size_small = camera.transform_delta(size_small);
                 let trans_shift = camera.transform_delta(shift);
                 let center = p_t + trans_shift;
 

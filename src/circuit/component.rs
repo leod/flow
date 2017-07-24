@@ -65,11 +65,11 @@ impl Element {
                 cells: vec![(Dir::Left, 0)]
             },
             Element::Input { size } => ElementDescr {
-                size: circuit::Coords::new(0, size as isize),
+                size: circuit::Coords::new(0, size as isize - 1),
                 cells: (0..size).map(|i| (Dir::Left, i)).collect()
             },
             Element::Output { size } => ElementDescr {
-                size: circuit::Coords::new(0, size as isize),
+                size: circuit::Coords::new(0, size as isize - 1),
                 cells: (0..size).map(|i| (Dir::Left, i)).collect()
             }
         }

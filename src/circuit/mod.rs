@@ -49,7 +49,7 @@ pub struct Circuit {
 }
 
 impl Circuit {
-    pub fn empty() -> Circuit {
+    pub fn new() -> Circuit {
         Circuit {
             components: HashMap::new(),
             graph: Graph::new(),
