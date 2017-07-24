@@ -12,7 +12,9 @@ pub enum Element {
     Node,
     Switch(SwitchType),
     Source,
-    Sink
+    Sink,
+    Input { size: usize },
+    Output { size: usize }
 }
 
 pub struct ElementDescr {
@@ -62,6 +64,14 @@ impl Element {
                 size: circuit::Coords::new(0, 0),
                 cells: vec![(Dir::Left, 0)]
             },
+            Element::Input { size } => ElementDescr {
+                size: circuit::Coords::new(0, size as isize),
+                cells: (0..size).map(|i| (Dir::Left, i)).collect()
+            },
+            Element::Output { size } => ElementDescr {
+                size: circuit::Coords::new(0, size as isize),
+                cells: (0..size).map(|i| (Dir::Left, i)).collect()
+            }
         }
     }
 
