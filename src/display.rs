@@ -150,8 +150,8 @@ impl Display {
             Element::Source | Element::Sink => {
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                     * EDGE_LENGTH;
-                let shift = c.size().cast() * HALF_EDGE_LENGTH;
                 let trans_size = camera.transform_delta(size);
+                let shift = c.size().cast() * HALF_EDGE_LENGTH;
                 let trans_shift = camera.transform_delta(shift);
                 let center = p_t + trans_shift;
 
@@ -170,12 +170,43 @@ impl Display {
                                  camera.transform_distance(size.x / 2.0),
                                  50)?;
 
+                if c.element == Element::Sink {
+                    graphics::set_color(ctx,
+                                        graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
+                    graphics::circle(ctx, graphics::DrawMode::Fill,
+                                     graphics::Point { x: center.x, y: center.y },
+                                     camera.transform_distance(size.x / 2.0 - 0.05),
+                                     50)?;
+                }
+            }
+            Element::Input { size } => {
+                let size = (c.size().cast() + Vector2::new(0.5, 0.5))
+                    * EDGE_LENGTH;
+                let shift = c.size().cast() * HALF_EDGE_LENGTH;
+                let trans_size = camera.transform_delta(size);
+                let trans_size_small = camera.transform_delta(size * 0.9);
+                let trans_shift = camera.transform_delta(shift);
+                let center = p_t + trans_shift;
+
+                let r = graphics::Rect {
+                    x: center.x,
+                    y: center.y,
+                    w: trans_size.x,
+                    h: trans_size.y
+                };
+                graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
+                
+                let r_small = graphics::Rect {
+                    x: center.x,
+                    y: center.y,
+                    w: trans_size_small.x,
+                    h: trans_size_small.y
+                };
                 graphics::set_color(ctx,
-                                    graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
-                graphics::circle(ctx, graphics::DrawMode::Fill,
-                                 graphics::Point { x: center.x, y: center.y },
-                                 camera.transform_distance(size.x / 2.0 - 0.05),
-                                 50)?;
+                    graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
+                graphics::rectangle(ctx, graphics::DrawMode::Fill, r_small)?;
+            }
+            Element::Output { size } => {
             }
         }
         

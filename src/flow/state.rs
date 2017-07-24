@@ -47,6 +47,8 @@ pub struct State {
     pub mut_idx_to_node_idx: Vec<NodeIndex>,
     pub source_cells: Vec<NodeIndex>,
     pub sink_cells: Vec<NodeIndex>,
+    pub input_cells: Vec<NodeIndex>,
+    pub output_cells: Vec<NodeIndex>
 }
 
 pub fn edge_quantity<T: Neg<Output=T>>(
@@ -103,87 +105,60 @@ impl State {
     }
 
     pub fn from_circuit(circuit: &Circuit) -> State {
+        let mut node_idx_counter = 0;
         let mut source_cells = Vec::new();
         let mut sink_cells = Vec::new();
-        
-        let mut node_idx_counter = 0;
-        let mut mut_idx_counter = 0;
-        let mut mut_idx_to_node_idx = Vec::new();
-        
-        let graph = CompactGraph::new(&circuit.graph());
+        let mut input_cells = Vec::new();
+        let mut output_cells = Vec::new();
         let flow = CompactGraphState::new(&circuit.graph(),
             |(component_id, cell_index), _node| {
                 let component =
                     circuit.components().get(&component_id).unwrap();
-
-                // TODO: Clean up
-                let res = match component.element {
+                
+                let pressure = match component.element {
+                    Element::Node => {
+                        None
+                    }
                     Element::Source => {
-                        let new_cell = Cell {
-                            bound_pressure: true,
-                            pressure: 100.0,
-                            load: 0.0,
-                            old_load: 0.0,
-                            in_flow: 0.0,
-                            out_flow: 0.0,
-                            mut_idx: None,
-                        };
                         source_cells.push(node_idx_counter);
-                        new_cell
-                    },
+                        Some(100.0)
+                    }
                     Element::Sink => {
-                        let new_cell = Cell {
-                            bound_pressure: true,
-                            pressure: 0.0,
-                            load: 0.0,
-                            old_load: 0.0,
-                            in_flow: 0.0,
-                            out_flow: 0.0,
-                            mut_idx: None,
-                        };
                         sink_cells.push(node_idx_counter);
-                        new_cell
-                    },
-                    _ => {
-                        let is_mut = 
-                            if let Element::Switch(_) = component.element {
-                                cell_index != 0
-                            } else {
-                                true
-                            };
-                        
-                        let mut_idx =
-                            if is_mut {
-                                mut_idx_to_node_idx.push(node_idx_counter);
-                                mut_idx_counter += 1;
-                                Some(mut_idx_counter-1)
-                            } else {
-                                None
-                            };
-                        
-                        let new_cell = Cell {
-                            bound_pressure: !is_mut,
-                            pressure: 0.0,
-                            load: 0.0,
-                            old_load: 0.0,
-                            in_flow: 0.0,
-                            out_flow: 0.0,
-                            mut_idx: mut_idx
-                        };
-                        
-                        new_cell
-                    },
+                        Some(0.0)
+                    }
+                    Element::Switch(_kind) => {
+                        if cell_index == 0 {
+                            sink_cells.push(node_idx_counter);
+                            Some(0.0)
+                        } else {
+                            None
+                        }
+                    }
+                    Element::Input { size } => {
+                        input_cells.push(node_idx_counter);
+                        Some(100.0)
+                    }
+                    Element::Output { size } => {
+                        output_cells.push(node_idx_counter);
+                        Some(0.0)
+                    }
                 };
                 
-                // Control cell of switch is a sink
-                if let Element::Switch(_) = component.element {
-                    if cell_index == 0 {
-                        sink_cells.push(node_idx_counter);
-                    }
-                }
-                
                 node_idx_counter += 1;
-                res
+                
+                let bound_pressure = pressure.is_some();
+                let init_pressure = pressure.unwrap_or(0.0);
+                
+                Cell {
+                    bound_pressure: bound_pressure,
+                    pressure: init_pressure,
+                    load: 0.0,
+                    old_load: 0.0,
+                    in_flow: 0.0,
+                    out_flow: 0.0,
+                    mut_idx: None
+                }   
             },
             |_, _, _| {
                 Edge {
@@ -195,6 +170,7 @@ impl State {
                 }
             });
         
+        let graph = CompactGraph::new(&circuit.graph());
         let components = circuit.components().iter().map(
             |(&_id, component)| {
                 State::new_component(circuit, &graph, component)
@@ -204,9 +180,11 @@ impl State {
             graph: graph,
             flow: flow,
             components: components,
-            mut_idx_to_node_idx: mut_idx_to_node_idx,
+            mut_idx_to_node_idx: Vec::new(),
             source_cells: source_cells,
             sink_cells: sink_cells,
+            input_cells: input_cells,
+            output_cells: output_cells
         }
     }
 }
