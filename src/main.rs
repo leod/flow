@@ -27,7 +27,7 @@ use ggez::event::{self, MouseButton, MouseState, Mod};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use circuit::{Circuit, Element};
+use circuit::Circuit;
 use display::Display;
 use hud::Hud;
 use camera::Camera;
