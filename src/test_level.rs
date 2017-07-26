@@ -1,27 +1,59 @@
+use rand::{self, Rng};
+
 use circuit;
 use flow;
 use level::{Level, Outcome, LevelImpl};
 
 pub struct TestLevel {
-    b: bool
+    seq: Vec<bool>,
+    written: usize,
+    read: usize,
 }
 
 impl LevelImpl for TestLevel {
-    fn time_step(&mut self, flow: &mut flow::State) -> Option<Outcome> {
-        for &idx in flow.input_cells.iter() {
-            flow.flow.node_mut(idx).enabled = self.b;
+    fn time_step(&mut self, state: &mut flow::State) -> Option<Outcome> {
+        if self.written < self.seq.len() {
+            state.flow.node_mut(state.input_cells[0]).enabled = true;
+            state.flow.node_mut(state.input_cells[1]).enabled = self.seq[self.written];
+            self.written += 1;
+        } else {
+            state.flow.node_mut(state.input_cells[0]).enabled = false;
+            state.flow.node_mut(state.input_cells[1]).enabled = false;
         }
-        self.b = !self.b;
-        None
+        
+        if state.flow.node(state.output_cells[0]).in_flow > 0.0 {
+            let output = state.flow.node(state.output_cells[1]).in_flow > 0.0;
+            
+            if output != self.seq[self.read] {
+                Some(Outcome::Failure)
+            } else {
+                self.read += 1;
+                if self.read == self.seq.len() {
+                    Some(Outcome::Success)
+                } else {
+                    None
+                }
+            }
+        } else {
+            None
+        }
     }
 }
 
 pub fn test_level() -> Level {
     Level {
-        input_size: 3,
+        input_size: 2,
         input_pos: circuit::Coords::new(0, 0),
         output_size: 2,
         output_pos: circuit::Coords::new(10, 0),
-        create_impl: Box::new(|| Box::new(TestLevel { b: false }))
+        create_impl: Box::new(|| {
+            let seq = (1..10).map(|_| rand::thread_rng().gen()).collect();
+            let state = TestLevel {
+                seq,
+                written: 0,
+                read: 0,
+            };
+            Box::new(state)
+        })
     }
 }

@@ -2,6 +2,7 @@ extern crate ggez;
 extern crate cgmath;
 extern crate floating_duration;
 extern crate rulinalg;
+extern crate rand;
 
 mod types;
 mod display;
@@ -82,8 +83,19 @@ impl MainState {
 
             }
             &Input::KeyDown { keycode: Keycode::T, keymod: _, repeat: _ } => {
-                if let &mut Some(ref mut level_state) = &mut self.level_state {
-                    level_state.time_step();
+                let finished = if let &mut Some(ref mut level_state) = &mut self.level_state {
+                    if let Some(outcome) = level_state.time_step() {
+                        println!("level outcome: {:?}", outcome);
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+                
+                if finished {
+                    self.level_state = None;
                 }
             }
             _ => {}

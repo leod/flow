@@ -11,6 +11,7 @@ pub struct Level {
     pub create_impl: Box<Fn() -> Box<LevelImpl>>
 }
 
+#[derive(Debug)]
 pub enum Outcome {
     Success,
     Failure
