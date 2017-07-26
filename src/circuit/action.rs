@@ -1,6 +1,6 @@
 use types::Dir;
 
-use super::{Coords, Component, Edge, Circuit};
+use super::{Coords, Element, Component, Edge, Circuit};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Action {
@@ -27,7 +27,19 @@ impl Action {
                 points_empty
             }
             &Action::RemoveComponentAtPos(pos) => {
-                circuit.points.get(&pos).is_some()
+                let point = circuit.points.get(&pos);
+                
+                if let Some(&(component_id, _cell_index)) = point {
+                    let element = circuit.components
+                        .get(&component_id).unwrap().element;
+                    match element {
+                        Element::Input { .. } => false,
+                        Element::Output { .. } => false,
+                        _ => true
+                    }
+                } else {
+                    false
+                }
             }
             &Action::PlaceEdgeAtPos(pos, dir, _edge) => {
                 let point_a = circuit.points.get(&pos);
