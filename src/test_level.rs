@@ -8,6 +8,7 @@ pub struct TestLevel {
     seq: Vec<bool>,
     written: usize,
     read: usize,
+    epochs: usize,
 }
 
 impl LevelImpl for TestLevel {
@@ -15,21 +16,29 @@ impl LevelImpl for TestLevel {
         if self.written < self.seq.len() {
             state.flow.node_mut(state.input_cells[0]).enabled = true;
             state.flow.node_mut(state.input_cells[1]).enabled = self.seq[self.written];
+            println!("write {}", self.seq[self.written]);
             self.written += 1;
         } else {
             state.flow.node_mut(state.input_cells[0]).enabled = false;
             state.flow.node_mut(state.input_cells[1]).enabled = false;
         }
         
-        if state.flow.node(state.output_cells[0]).in_flow > 0.0 {
-            let output = state.flow.node(state.output_cells[1]).in_flow > 0.0;
+        if state.flow.node(state.output_cells[0]).in_flow > 0.01 {
+            let output = state.flow.node(state.output_cells[1]).in_flow > 0.01;
+            println!("read {}", output);
             
             if output != self.seq[self.read] {
                 Some(Outcome::Failure)
             } else {
                 self.read += 1;
                 if self.read == self.seq.len() {
-                    Some(Outcome::Success)
+                    self.read = 0;
+                    self.epochs += 1;
+                    if self.epochs == 2 {
+                        Some(Outcome::Success)
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
@@ -52,6 +61,7 @@ pub fn test_level() -> Level {
                 seq,
                 written: 0,
                 read: 0,
+                epochs: 0,
             };
             Box::new(state)
         })
