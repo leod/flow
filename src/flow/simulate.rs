@@ -187,8 +187,8 @@ fn flow(state: &mut State) {
             // TODO: for now, accept that some load is lost in rounding 
             let flow = (rel_vel * cell_load).min(velocity);
             
-            println!("cell {0} is giving {1}: {2}% of {3}: {4}",
-                node_idx, neigh_node_idx, rel_vel * 100.0, cell_load, flow);
+            /*println!("cell {0} is giving {1}: {2}% of {3}: {4}",
+                node_idx, neigh_node_idx, rel_vel * 100.0, cell_load, flow);*/
 
             {
                 let neigh_node = state.flow.node_mut(neigh_node_idx);
