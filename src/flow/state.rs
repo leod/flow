@@ -138,12 +138,14 @@ impl State {
                     }
                     Element::Input { size } => {
                         source_cells.push(node_idx_counter);
-                        input_cells.push(node_idx_counter);
+                        input_cells.resize(size, 0);
+                        input_cells[cell_index] = node_idx_counter;
                         Some(100.0)
                     }
                     Element::Output { size } => {
                         sink_cells.push(node_idx_counter);
-                        output_cells.push(node_idx_counter);
+                        output_cells.resize(size, 0);
+                        output_cells[cell_index] = node_idx_counter;
                         Some(0.0)
                     }
                 };
