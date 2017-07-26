@@ -66,7 +66,7 @@ impl Action {
 
     // Returns an action that reverts the perfomed action
     pub fn perform(self, circuit: &mut Circuit) -> Action {
-        println!("circuit action: {:?}", self);
+        //println!("circuit action: {:?}", self);
 
         assert!(self.can_perform(circuit));
 
@@ -93,7 +93,7 @@ impl Action {
                 for c in component.rect.iter() {
                     let cell_index = component.cells.iter().position(|&x| x == c);
                     circuit.points.insert(c, (component_id, cell_index));
-                    println!("mark {:?}", c);
+                    //println!("mark {:?}", c);
                 }
 
                 Action::RemoveComponentAtPos(component.pos)
