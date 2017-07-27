@@ -10,6 +10,7 @@ pub enum SwitchType {
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Element {
     Node,
+    Bridge,
     Switch(SwitchType),
     Source,
     Sink,
@@ -49,6 +50,10 @@ impl Element {
     pub fn descr(&self) -> ElementDescr {
         match *self {
             Element::Node => ElementDescr {
+                size: circuit::Coords::new(0, 0),
+                cells: vec![(Dir::Left, 0)]
+            },
+            Element::Bridge => ElementDescr {
                 size: circuit::Coords::new(0, 0),
                 cells: vec![(Dir::Left, 0)]
             },

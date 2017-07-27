@@ -112,6 +112,16 @@ impl Display {
 
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
             }
+            Element::Node => {
+                let r = graphics::Rect {
+                    x: p_t.x,
+                    y: p_t.y,
+                    w: camera.transform_distance(EDGE_LENGTH / 2.0),
+                    h: camera.transform_distance(EDGE_LENGTH / 2.0)
+                };
+
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+            }
             Element::Switch(kind) => {
                 let control_p_t =
                     camera.transform(c.cells[0].cast() * EDGE_LENGTH);
