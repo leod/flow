@@ -310,7 +310,10 @@ impl Display {
                 graphics::line(ctx, &vec![a_point, b_point])?;
             }
             
-            let percent = edge.flow.abs() as f32 / 10.0; // TODO
+            let mut percent = edge.flow.abs() as f32 / 10.0; // TODO
+            if percent > 1.5 {
+                percent = 1.5;
+            }
             let size = max_size * percent;
             
             // Order from/to according to node indices

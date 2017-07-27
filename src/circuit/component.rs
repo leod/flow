@@ -57,8 +57,8 @@ impl Element {
                 cells: vec![(Dir::Left, 0), (Dir::Right, 0)],
             },
             Element::Source => ElementDescr {
-                size: circuit::Coords::new(2, 2),
-                cells: vec![(Dir::Right, 1)],
+                size: circuit::Coords::new(0, 0),
+                cells: vec![(Dir::Right, 0)],
             },
             Element::Sink => ElementDescr {
                 size: circuit::Coords::new(0, 0),
