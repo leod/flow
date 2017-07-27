@@ -98,7 +98,7 @@ impl Action {
 
                 // Create cells in graph
                 for (i, &pos) in component.cells.iter().enumerate() {
-                    circuit.graph.add_node((component_id, i), pos);
+                    circuit.graph.add_node(component_id, pos);
                 }
 
                 // Mark grid points as used

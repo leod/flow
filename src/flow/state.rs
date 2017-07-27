@@ -1,6 +1,6 @@
 use std::ops::Neg;
 
-use circuit::{self, Element, Circuit, CellId};
+use circuit::{self, ComponentId, Element, Circuit, CellId};
 use graph::{NodeIndex, CompactGraph, CompactGraphState};
 
 #[derive(Clone, Copy, Debug)]
@@ -66,13 +66,12 @@ impl State {
     fn new_component(
         circuit: &Circuit,
         graph: &CompactGraph<CellId>,
+        id: ComponentId,
         component: &circuit::Component
     ) -> Component {
-        let cells = component.cells.iter().map(
-            |cell_pos| {
-                let point = circuit.points().get(cell_pos).unwrap();
-                let cell_index = point.1.unwrap();
-                let cell_id = (point.0, cell_index);
+        let cells = (0 .. component.cells.len()).map(
+            |cell_index| {
+                let cell_id = (id, cell_index);
                 graph.node_index(cell_id)
             }).collect();
         
@@ -178,8 +177,8 @@ impl State {
         
         let graph = CompactGraph::new(&circuit.graph());
         let components = circuit.components().iter().map(
-            |(&_id, component)| {
-                State::new_component(circuit, &graph, component)
+            |(&id, component)| {
+                State::new_component(circuit, &graph, id, component)
             }).collect();
         
         State {
