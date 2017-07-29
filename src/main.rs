@@ -87,7 +87,12 @@ impl MainState {
                     &None => {
                         // Start simulation 
                         let unfolded_circuit = self.circuit.unfold(&self.chip_db);
-                        Some(self.level.new_state(&unfolded_circuit))
+                        if let Some(circuit) = unfolded_circuit {
+                            Some(self.level.new_state(&circuit))
+                        } else {
+                            println!("Circuit is cyclic");
+                            None
+                        }
                     }
                 };
                 if self.level_state.is_some() {
