@@ -157,9 +157,12 @@ impl Display {
                 graphics::line(ctx, &vec![b_p, b_end_p])?;
             }
             &Element::Switch(kind) => {
-                let control_p_t =
-                    camera.transform(c.cells[0].cast() * EDGE_LENGTH);
-                let flow_p_t = camera.transform(c.cells[1].cast() * EDGE_LENGTH);
+                let left_dir = Dir::Left.rotate_cw_n(c.rotation_cw);
+                let flow_p = c.cells[1].cast();
+                let control_p = flow_p + left_dir.delta().cast() * 0.25;
+
+                let flow_p_t = camera.transform(flow_p * EDGE_LENGTH);
+                let control_p_t = camera.transform(control_p * EDGE_LENGTH);
 
                 graphics::circle(ctx,
                     graphics::DrawMode::Fill,
@@ -167,14 +170,14 @@ impl Display {
                         x: control_p_t.x,
                         y: control_p_t.y
                     },
-                    camera.transform_distance(HALF_EDGE_LENGTH * 0.75),
+                    camera.transform_distance(HALF_EDGE_LENGTH * 0.3),
                     50)?;
 
                 let r = graphics::Rect {
                     x: flow_p_t.x,
                     y: flow_p_t.y,
-                    w: camera.transform_distance(EDGE_LENGTH),
-                    h: camera.transform_distance(EDGE_LENGTH)
+                    w: camera.transform_distance(HALF_EDGE_LENGTH),
+                    h: camera.transform_distance(HALF_EDGE_LENGTH)
                 };
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
                             
@@ -187,7 +190,7 @@ impl Display {
                             x: control_p_t.x,
                             y: control_p_t.y
                         },
-                        camera.transform_distance(HALF_EDGE_LENGTH * 0.7),
+                        camera.transform_distance(HALF_EDGE_LENGTH * 0.25),
                         50)?;
                 }
             }
@@ -377,6 +380,12 @@ impl Display {
                 let size = camera.transform_distance(EDGE_LENGTH * 0.45);
                 let size =
                     if is_bridge_inner {
+                        size / 2.0
+                    } else {
+                        size
+                    };
+                let size =
+                    if let &Element::Switch(_) = &c.element {
                         size / 2.0
                     } else {
                         size
