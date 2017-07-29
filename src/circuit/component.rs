@@ -80,9 +80,10 @@ impl Element {
                  Some(vec![vec![Dir::Up, Dir::Down],
                            vec![Dir::Left, Dir::Right]])),
             &Element::Switch(_) =>
-                (circuit::Coords::new(1, 0),
+                (circuit::Coords::new(0, 0),
                  vec![(Dir::Left, 0), (Dir::Right, 0)],
-                 None),
+                 Some(vec![vec![Dir::Left],
+                           vec![Dir::Right, Dir::Up, Dir::Down]])),
             &Element::Source => 
                 (circuit::Coords::new(0, 0),
                  vec![(Dir::Right, 0)],
