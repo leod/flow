@@ -79,11 +79,18 @@ impl Circuit {
     // This mean that chip components are replaced by the circuit, as it
     // is given in the chip database.
     // Note that the points map of the resulting circuit is not valid.
+    // Returns None if the chips are cyclic.
     // TODO: Unfolding might also be possible to do without creating an
     // intermediate circuit, while creating the CompactGraph.
-    pub fn unfold(&self, chip_db: &ChipDb) -> Circuit {
+    pub fn unfold(&self, chip_db: &ChipDb) -> Option<Circuit> {
         let mut unfolded_circuit = self.clone();
         let mut finished_ids = HashSet::new();
+
+        // Keep unfolding chips until there are no unfolded chips left.
+        // To prevent infinite loops, keep track of which chip is contained
+        // in which chips.
+        // TODO: This check might be better done in the editor.
+        let mut contained_in = HashMap::new();
 
         loop {
             let chip_component_ids = unfolded_circuit.components.iter().filter(
@@ -148,6 +155,27 @@ impl Circuit {
                             }
                             
                             unfolded_circuit.components.insert(new_id, component.clone());
+
+                            // If we just inserted a chip component, keep track of the origin,
+                            // to check for cycles
+                            if let &Element::Chip(inner_chip_id, ref _chip_descr) = &component.element {
+                                if contained_in.get(&inner_chip_id).is_none() {
+                                    contained_in.insert(inner_chip_id, HashSet::new()); 
+                                }
+                                contained_in.get_mut(&inner_chip_id).unwrap().insert(chip_id);
+
+                                // Take a transitive closure of the contained_in relation
+                                if contained_in.get(&chip_id).is_none() {
+                                    contained_in.insert(chip_id, HashSet::new());
+                                }
+                                for &outer_chip_id in contained_in.get(&chip_id).unwrap().clone().iter() {
+                                    contained_in.get_mut(&inner_chip_id).unwrap().insert(outer_chip_id);
+                                    if outer_chip_id == inner_chip_id {
+                                        // Cycle
+                                        return None;
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -163,6 +191,6 @@ impl Circuit {
                 }
             }
         }
-        unfolded_circuit
+        Some(unfolded_circuit)
     }
 }
