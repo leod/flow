@@ -111,7 +111,7 @@ impl Element {
                 let left_edges = (0..descr.left_size).map(|_| vec![Dir::Left]);
                 let right_edges = (0..descr.right_size).map(|_| vec![Dir::Right]);
                 let edges = left_edges.chain(right_edges).collect();
-                (circuit::Coords::new(1, height as isize),
+                (circuit::Coords::new(1, height as isize - 1),
                  cells,
                  Some(edges))
             }
