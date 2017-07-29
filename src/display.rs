@@ -303,6 +303,13 @@ impl Display {
     ) -> GameResult<()> {
         for (&id, ref c) in circuit.components().iter() {
             for (cell_index, _pos) in c.cells.iter().enumerate() {
+                if let Element::Input { .. } = c.element {
+                    continue;
+                }
+                if let Element::Output { .. } = c.element {
+                    continue;
+                }
+            
                 let cell_id = (id, cell_index);
                 let node_index = state.graph.node_index(cell_id);
                 let cell = state.flow.node(node_index);
@@ -311,19 +318,13 @@ impl Display {
 
                 let p = c.cells[cell_index].cast();
                 let p_t = camera.transform(p * EDGE_LENGTH);
-                let size = camera.transform_distance(EDGE_LENGTH * 0.4);
+                let size = camera.transform_distance(EDGE_LENGTH * 0.45);
                 let size =
                     if is_bridge_inner {
                         size / 2.0
                     } else {
                         size
                     };
-                let r = graphics::Rect {
-                    x: p_t.x,
-                    y: p_t.y,
-                    w: size,
-                    h: size
-                };
 
                 let pressure = cell.pressure as f32;
                 graphics::set_color(ctx,
@@ -331,10 +332,25 @@ impl Display {
                                          0.0,
                                          1.0 * (1.0 - pressure/100.0),
                                          1.0))?;
-                graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
                 
-                if is_bridge_inner {
-                    self.draw_component(ctx, camera, c, DrawMode::Real)?;
+                if c.element != Element::Source && c.element != Element::Sink {
+                    let r = graphics::Rect {
+                        x: p_t.x,
+                        y: p_t.y,
+                        w: size,
+                        h: size
+                    };
+
+                    graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
+                    
+                    if is_bridge_inner {
+                        self.draw_component(ctx, camera, c, DrawMode::Real)?;
+                    }
+                } else {
+                    graphics::circle(ctx, graphics::DrawMode::Fill,
+                                     graphics::Point { x: p_t.x, y: p_t.y },
+                                     size / 2.0,
+                                     50)?;
                 }
             }
         }
@@ -364,8 +380,8 @@ impl Display {
             }*/
             
             let mut percent = edge.flow.abs() as f32 / 10.0; // TODO
-            if percent > 1.5 {
-                percent = 1.5;
+            if percent > 1.0 {
+                percent = 1.0;
             }
             let size = max_size * percent;
             
