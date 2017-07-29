@@ -283,10 +283,10 @@ impl Display {
                 // Corner position of the nodes
                 let dir = Dir::Left.rotate_cw_n(c.rotation_cw);
                 let orth_dir = dir.rotate_cw();
-                let left = c.pos.cast() + dir.invert().delta().cast() / 4.0;
+                let left = c.pos.cast() + dir.delta().cast() / 4.0;
                 let x = left + orth_dir.delta().cast() / 4.0;
                 let y = left + orth_dir.invert().delta().cast() / 4.0;
-                let z = c.pos.cast() + dir.delta().cast() / 4.0;
+                let z = c.pos.cast() + dir.invert().delta().cast() / 4.0;
                 
                 let x_t = camera.transform(x * EDGE_LENGTH);
                 let y_t = camera.transform(y * EDGE_LENGTH);
@@ -392,10 +392,10 @@ impl Display {
                 if c.element == Element::Power {
                     let dir = Dir::Left.rotate_cw_n(c.rotation_cw);
                     let orth_dir = dir.rotate_cw();
-                    let left = c.pos.cast() + dir.invert().delta().cast() / 4.0;
+                    let left = c.pos.cast() + dir.delta().cast() / 4.0;
                     let x = left + orth_dir.delta().cast() / 4.0;
                     let y = left + orth_dir.invert().delta().cast() / 4.0;
-                    let z = c.pos.cast() + dir.delta().cast() / 4.0;
+                    let z = c.pos.cast() + dir.invert().delta().cast() / 4.0;
                     
                     let x_t = camera.transform(x * EDGE_LENGTH);
                     let y_t = camera.transform(y * EDGE_LENGTH);
