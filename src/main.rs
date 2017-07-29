@@ -138,12 +138,12 @@ impl event::EventHandler for MainState {
 
         let circuit = self.hud.cur_circuit(&self.circuit, &self.chip_db);
         self.display.draw_grid_edges(ctx, &self.camera, circuit)?;
-        self.display.draw_components(ctx, &self.camera, circuit)?;
+        self.display.draw_components(ctx, &self.hud.font, &self.camera, circuit)?;
 
         if let &Some(ref level_state) = &self.level_state {
             if self.hud.cur_chip_id().is_none() {
                 let flow = &level_state.flow;
-                self.display.draw_flow(ctx, &self.camera, &self.circuit, flow)?;
+                self.display.draw_flow(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
                 //self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
             }
         } else {

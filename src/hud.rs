@@ -139,15 +139,15 @@ impl Hud {
 
     fn keycode_to_chip_id(&self, keycode: input::Keycode) -> Option<ChipId> {
         match keycode {
-            input::Keycode::F2 => Some(0),
-            input::Keycode::F3 => Some(1),
-            input::Keycode::F4 => Some(2),
-            input::Keycode::F5 => Some(3),
-            input::Keycode::F6 => Some(4),
-            input::Keycode::F7 => Some(5),
-            input::Keycode::F8 => Some(6),
-            input::Keycode::F9 => Some(7),
-            input::Keycode::F10 => Some(8),
+            input::Keycode::F2 => Some(2),
+            input::Keycode::F3 => Some(3),
+            input::Keycode::F4 => Some(4),
+            input::Keycode::F5 => Some(5),
+            input::Keycode::F6 => Some(6),
+            input::Keycode::F7 => Some(7),
+            input::Keycode::F8 => Some(8),
+            input::Keycode::F9 => Some(9),
+            input::Keycode::F10 => Some(10),
             _ => None
         }
     }
@@ -524,7 +524,7 @@ impl Hud {
                         display::DrawMode::Invalid
                     };
 
-                display.draw_component(ctx, camera, &component, draw_mode)?; 
+                display.draw_component(ctx, &self.font, camera, &component, draw_mode)?; 
             },
             _ => {}
         }
@@ -558,7 +558,7 @@ impl Hud {
         coords_text.draw(ctx, coords_text_pos, 0.0)?;*/
 
         let chip_str = match self.cur_chip_id {
-            Some(ref cur_chip_id) => format!("Chip {:?}", cur_chip_id+1),
+            Some(ref cur_chip_id) => format!("Chip {:?}", cur_chip_id),
             None => format!("Main circuit")
         };
         let chip_text = graphics::Text::new(ctx, &chip_str, &self.font)?;

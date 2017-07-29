@@ -41,7 +41,7 @@ impl ChipDb {
     }
 
     pub fn init(n_chips: usize) -> ChipDb {
-        let chips = (0 .. n_chips).map(
+        let chips = (2 .. 2+n_chips).map(
             |i| {
                 let descr = ChipDescr {
                     inner_size: Coords::new(10, 10),
