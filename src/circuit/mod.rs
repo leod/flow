@@ -10,6 +10,7 @@ pub use types::Coords;
 pub use self::action::Action;
 pub use self::component::{SwitchType, ChipId, ChipDescr, 
     ElementDescr, Element, Component};
+pub use self::chip_db::{Chip, ChipDb};
 
 pub type ComponentId = usize;
 

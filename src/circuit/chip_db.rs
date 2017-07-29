@@ -26,7 +26,7 @@ impl ChipDb {
         }
         {
             let element = Element::Input { size: descr.right_size };
-            let pos = Coords::new(0, descr.inner_size.y);
+            let pos = Coords::new(descr.inner_size.x, 0);
             let component = element.new_component(pos, 0);
             let action = Action::PlaceComponent(component);
             action.perform(&mut circuit);
@@ -52,19 +52,19 @@ impl ChipDb {
         ChipDb { chips }
     }
 
-    pub fn get(&self, id: ChipId) -> Option<&Chip> {
-        self.chips.get(&id)        
+    pub fn get(&self, id: &ChipId) -> Option<&Chip> {
+        self.chips.get(id)        
     }
 
-    pub fn get_descr(&self, id: ChipId) -> Option<&ChipDescr> {
-        self.chips.get(&id).map(|chip| &chip.descr)
+    pub fn get_descr(&self, id: &ChipId) -> Option<&ChipDescr> {
+        self.chips.get(id).map(|chip| &chip.descr)
     }
 
-    pub fn get_circuit(&self, id: ChipId) -> Option<&Circuit> {
-        self.chips.get(&id).map(|chip| &chip.circuit)
+    pub fn get_circuit(&self, id: &ChipId) -> Option<&Circuit> {
+        self.chips.get(id).map(|chip| &chip.circuit)
     }
 
-    pub fn get_circuit_mut(&mut self, id: ChipId) -> Option<&mut Circuit> {
-        self.chips.get_mut(&id).map(|chip| &mut chip.circuit)
+    pub fn get_circuit_mut(&mut self, id: &ChipId) -> Option<&mut Circuit> {
+        self.chips.get_mut(id).map(|chip| &mut chip.circuit)
     }
 }
