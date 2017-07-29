@@ -99,7 +99,7 @@ impl Circuit {
                         &Element::Chip(_chip_id, ref _descr) => true,
                         _ => false
                     } && !finished_ids.contains(c_id)
-                ).map(|(&c_id, component)| c_id)
+                ).map(|(&c_id, _component)| c_id)
                  .collect::<Vec<_>>();
 
             if chip_component_ids.len() == 0 {
@@ -113,7 +113,7 @@ impl Circuit {
                     unfolded_circuit.components.get(&chip_component_id).unwrap().clone();
                 let chip_element_descr = chip_component.element.descr();
 
-                if let Element::Chip(chip_id, descr) = chip_component.element {
+                if let Element::Chip(chip_id, _descr) = chip_component.element {
                     let chip = chip_db.get(&chip_id).unwrap();
 
                     // Map from cell IDs inside chip circuit to cell IDs in 

@@ -223,7 +223,7 @@ impl Display {
                                      50)?;
                 }
             }
-            &Element::Input { size } => {
+            &Element::Input { size: _ } => {
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                     * EDGE_LENGTH;
                 let size_small = (c.size().cast() + Vector2::new(0.25, 0.25))
@@ -252,7 +252,7 @@ impl Display {
                     graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, r_small)?;
             }
-            &Element::Output { size } => {
+            &Element::Output { size: _ } => {
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                     * EDGE_LENGTH;
                 let size_small = (c.size().cast() + Vector2::new(0.25, 0.25))
