@@ -17,14 +17,7 @@ pub type ComponentId = usize;
 pub type CellId = (ComponentId, usize);
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub enum Layer {
-    Ground,
-    Underground
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Edge {
-    pub layer: Layer
 }
 
 pub type Point = ComponentId;

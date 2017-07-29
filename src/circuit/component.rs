@@ -1,3 +1,5 @@
+use cgmath::Zero;
+
 use types::{Dir, Rect};
 use circuit;
 
@@ -26,7 +28,9 @@ pub struct ElementDescr {
     // by the side of the rect they are and the position on that side.
     // NOTE: edges is assumed not to contain duplicates. Also, the side 
     //       positions must be smaller than the size.
-    pub cells: Vec<(Dir, usize)>
+    pub cells: Vec<(Dir, usize)>,
+    
+    pub cell_edges: Vec<Vec<Dir>>
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -43,41 +47,72 @@ pub struct Component {
     pub rect: Rect,
 
     // Unique positions of cells
-    pub cells: Vec<circuit::Coords>
+    pub cells: Vec<circuit::Coords>,
+    
+    pub cell_edges: Vec<Vec<Dir>>
 }
 
 impl Element {
     pub fn descr(&self) -> ElementDescr {
-        match *self {
-            Element::Node => ElementDescr {
-                size: circuit::Coords::new(0, 0),
-                cells: vec![(Dir::Left, 0)]
-            },
-            Element::Bridge => ElementDescr {
-                size: circuit::Coords::new(0, 0),
-                cells: vec![(Dir::Left, 0)]
-            },
-            Element::Switch(_) => ElementDescr {
-                size: circuit::Coords::new(1, 0),
-                cells: vec![(Dir::Left, 0), (Dir::Right, 0)],
-            },
-            Element::Source => ElementDescr {
-                size: circuit::Coords::new(0, 0),
-                cells: vec![(Dir::Right, 0)],
-            },
-            Element::Sink => ElementDescr {
-                size: circuit::Coords::new(0, 0),
-                cells: vec![(Dir::Left, 0)]
-            },
-            Element::Input { size } => ElementDescr {
-                size: circuit::Coords::new(0, size as isize - 1),
-                cells: (0..size).map(|i| (Dir::Left, i)).collect()
-            },
-            Element::Output { size } => ElementDescr {
-                size: circuit::Coords::new(0, size as isize - 1),
-                cells: (0..size).map(|i| (Dir::Left, i)).collect()
+        let (size, cells, cell_edges) = match *self {
+            Element::Node =>
+                (circuit::Coords::new(0, 0),
+                 vec![(Dir::Left, 0)],
+                 None),
+            Element::Bridge =>
+                (circuit::Coords::new(0, 0),
+                 vec![(Dir::Left, 0), (Dir::Left, 0)],
+                 Some(vec![vec![Dir::Up, Dir::Down],
+                           vec![Dir::Left, Dir::Right]])),
+            Element::Switch(_) =>
+                (circuit::Coords::new(1, 0),
+                 vec![(Dir::Left, 0), (Dir::Right, 0)],
+                 None),
+            Element::Source => 
+                (circuit::Coords::new(0, 0),
+                 vec![(Dir::Right, 0)],
+                 None),
+            Element::Sink =>
+                (circuit::Coords::new(0, 0),
+                 vec![(Dir::Left, 0)],
+                 None),
+            Element::Input { size } =>
+                (circuit::Coords::new(0, size as isize - 1),
+                 (0..size).map(|i| (Dir::Left, i)).collect(),
+                 None),
+            Element::Output { size } =>
+                (circuit::Coords::new(0, size as isize - 1),
+                 (0..size).map(|i| (Dir::Left, i)).collect(),
+                 None),
+        };
+        
+        let cell_edges = match cell_edges {
+            Some(cell_edges) => cell_edges,
+            None => {
+                let rect =
+                    Rect {
+                        pos: circuit::Coords::zero(),
+                        size: size
+                    };
+            
+                cells.iter().map(
+                    |&(cell_dir, cell_k)| {
+                        let corner = rect.first_corner_cw(cell_dir);
+                        let perp_dir = cell_dir.rotate_cw();
+                        let cell_pos = perp_dir.apply_n(corner, cell_k);
+                        Dir::iter().filter_map(
+                            |&edge_dir| {
+                                if rect.is_within(edge_dir.apply(cell_pos)) {
+                                    None
+                                } else {
+                                    Some(edge_dir)
+                                }
+                            }).collect()
+                    }).collect()
             }
-        }
+        };
+        
+        ElementDescr { size, cells, cell_edges }
     }
 
     pub fn new_component(
@@ -99,14 +134,19 @@ impl Element {
                 let corner = rect.first_corner_cw(rot_dir);
                 let perp_dir = rot_dir.rotate_cw();
                 perp_dir.apply_n(corner, k)
-            }).collect::<Vec<circuit::Coords>>();
+            }).collect();
+        let cell_edges = descr.cell_edges.iter().map(|edge_dirs|
+            edge_dirs.iter().map(|&edge_dir| {
+                edge_dir.rotate_cw_n(rotation_cw)
+            }).collect()).collect();
 
         Component {
             element: *self,
             pos: top_left_pos,
-            rotation_cw: rotation_cw,
-            rect: rect,
-            cells: cells,
+            rotation_cw,
+            rect,
+            cells,
+            cell_edges,
         }
     }
 }
@@ -114,5 +154,21 @@ impl Element {
 impl Component {
     pub fn size(&self) -> circuit::Coords {
         self.rect.size
+    }
+    
+    pub fn get_edge_cell_index(
+        &self,
+        p: circuit::Coords,
+        dir: Dir
+    ) -> Option<usize> {
+        self.cells.iter()
+            .zip(self.cell_edges.iter())
+            .enumerate()
+            .find(|&(_, (&cell_pos, cell_edges))| {
+                    cell_pos == p &&
+                    cell_edges.iter().find(|&&edge_dir| edge_dir == dir)
+                              .is_some()
+                  })
+            .map(|(cell_index, _)| cell_index)
     }
 }

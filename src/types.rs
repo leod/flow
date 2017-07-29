@@ -1,4 +1,5 @@
 use std::cmp;
+use std::slice;
 
 use cgmath;
 
@@ -31,6 +32,11 @@ pub struct RectIter {
 
 #[allow(dead_code)]
 impl Dir {
+    pub fn iter() -> slice::Iter<'static, Dir> {
+        static DIRS: [Dir;  4] = [Dir::Left, Dir::Right, Dir::Up, Dir::Down];
+        DIRS.into_iter()
+    }
+
     // Direction pointing from a to b
     pub fn from_coords(a: Coords, b: Coords) -> Dir {
         if b.x == a.x - 1 {

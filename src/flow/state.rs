@@ -64,7 +64,6 @@ pub fn edge_quantity<T: Neg<Output=T>>(
 
 impl State {
     fn new_component(
-        circuit: &Circuit,
         graph: &CompactGraph<CellId>,
         id: ComponentId,
         component: &circuit::Component
@@ -117,6 +116,9 @@ impl State {
                 
                 let pressure = match component.element {
                     Element::Node => {
+                        None
+                    }
+                    Element::Bridge => {
                         None
                     }
                     Element::Source => {
@@ -178,7 +180,7 @@ impl State {
         let graph = CompactGraph::new(&circuit.graph());
         let components = circuit.components().iter().map(
             |(&id, component)| {
-                State::new_component(circuit, &graph, id, component)
+                State::new_component(&graph, id, component)
             }).collect();
         
         State {

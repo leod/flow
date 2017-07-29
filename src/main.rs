@@ -122,7 +122,7 @@ impl event::EventHandler for MainState {
         if let &Some(ref level_state) = &self.level_state {
             let flow = &level_state.flow;
             self.display.draw_flow(ctx, &self.camera, &self.circuit, flow)?;
-            self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
+            //self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
         } else {
             self.hud.draw(ctx, &self.camera, &self.circuit, &self.display)?;
         }

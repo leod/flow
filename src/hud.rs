@@ -155,6 +155,12 @@ impl Hud {
                             rotation_cw: 0,
                         });
                     }
+                    input::Keycode::Num6 => {
+                        self.change_state(State::PlaceElement {
+                            element: Element::Bridge,
+                            rotation_cw: 0,
+                        });
+                    }
                     _ => {}
                 }
 
@@ -363,11 +369,9 @@ impl Hud {
 
                             if let Some(p) = prev_c {
                                 let dir = Dir::from_coords(p, c);
-                                let edge = circuit::Edge {
-                                    layer: circuit::Layer::Ground
-                                };
+                                let edge = circuit::Edge {};
 
-                                let action = Action::PlaceEdgeAtPos(p, dir, edge);
+                                let action = Action::PlaceEdgeAtPos(p, dir, Some(edge));
                                 if let Some(u_action) = action.try_perform(circuit) {
                                     undo.push(u_action); 
                                 }
@@ -424,8 +428,8 @@ impl Hud {
         let r = graphics::Rect {
             x: grid_coords_t.x,
             y: grid_coords_t.y,
-            w: camera.transform_distance(display::EDGE_LENGTH / 3.0),
-            h: camera.transform_distance(display::EDGE_LENGTH / 3.0)
+            w: camera.transform_distance(display::EDGE_LENGTH / 6.0),
+            h: camera.transform_distance(display::EDGE_LENGTH / 6.0)
         };
 
         graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
