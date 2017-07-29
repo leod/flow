@@ -45,8 +45,8 @@ impl ChipDb {
             |i| {
                 let descr = ChipDescr {
                     inner_size: Coords::new(10, 10),
-                    left_size: 3,
-                    right_size: 2
+                    left_size: 2 + i % 2,
+                    right_size: 2 + i % 2
                 };
                 let (circuit, left_input_id, right_input_id) = Self::new_circuit(&descr);
                 let chip = Chip {

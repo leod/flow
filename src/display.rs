@@ -306,7 +306,7 @@ impl Display {
                 
                 graphics::polygon(ctx, graphics::DrawMode::Fill, &vertices)?;
             }
-            &Element::Chip(ref chip_id, ref chip_descr) => {
+            &Element::Chip(ref chip_id, ref _chip_descr) => {
                 self.draw_component_edges(ctx, camera, c)?;
 
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
