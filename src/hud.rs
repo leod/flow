@@ -243,12 +243,19 @@ impl Hud {
                     input::Keycode::F1 => {
                         self.switch_chip(&None);
                     }
-                    keycode if keymod.contains(keyboard::LSHIFTMOD) => {
+                    keycode => {
                         if let Some(chip_id) = self.keycode_to_chip_id(keycode) {
-                            self.switch_chip(&Some(chip_id));
+                            if keymod.contains(keyboard::LSHIFTMOD) {
+                                self.switch_chip(&Some(chip_id));
+                            } else {
+                                let chip_descr = chip_db.get_descr(&chip_id).unwrap();
+                                self.change_state(State::PlaceElement {
+                                    element: Element::Chip(chip_id, chip_descr.clone()),
+                                    rotation_cw: 0, 
+                                });
+                            }
                         }
                     }
-                    _ => {}
                 }
 
                 self.key_down_event(circuit, chip_db, camera, keycode);

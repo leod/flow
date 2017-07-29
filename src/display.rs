@@ -72,15 +72,16 @@ impl Display {
         camera: &Camera,
         component: &Component
     ) -> GameResult<()> {
-        for &a in component.cells.iter() {
-            for &dir in &vec![Dir::Left, Dir::Right, Dir::Up, Dir::Down] {
-                let end = dir.apply(a);
+        for (cell_index, &a_coords) in component.cells.iter().enumerate() {
+            for &dir in component.cell_edges[cell_index].iter() {
+                let end = dir.apply(a_coords);
 
                 if !component.rect.is_within(end) {
                     let delta = dir.apply(Vector2::zero()).cast();
-                    let b = a.cast() + delta * 0.4;
+                    let a = a_coords.cast() + delta * 0.25;
+                    let b = a + delta * 0.2;
 
-                    let a_t = camera.transform(a.cast() * EDGE_LENGTH);
+                    let a_t = camera.transform(a * EDGE_LENGTH);
                     let b_t = camera.transform(b * EDGE_LENGTH);
 
                     let a_p = graphics::Point::new(a_t.x, a_t.y);
@@ -305,13 +306,20 @@ impl Display {
                 graphics::polygon(ctx, graphics::DrawMode::Fill, &vertices)?;
             }
             &Element::Chip(ref chip_id, ref chip_descr) => {
+                self.draw_component_edges(ctx, camera, c)?;
+
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                     * EDGE_LENGTH;
+                let trans_size = camera.transform_delta(size);
+                let shift = c.size().cast() * HALF_EDGE_LENGTH;
+                let trans_shift = camera.transform_delta(shift);
+                let center = p_t + trans_shift;
+
                 let r = graphics::Rect {
-                    x: p_t.x,
-                    y: p_t.y,
-                    w: size.x,
-                    h: size.y
+                    x: center.x,
+                    y: center.y,
+                    w: trans_size.x,
+                    h: trans_size.y
                 };
 
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
