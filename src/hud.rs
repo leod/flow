@@ -203,7 +203,7 @@ impl Hud {
     ) {
         let grid_coords = screen_to_grid_coords(camera, x, y);
 
-        match self.state {
+        match self.state.clone() {
             State::Initial => {
                 match button {
                     input::MouseButton::Left => {
@@ -233,7 +233,7 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::PlaceElement { element, rotation_cw } => {
+            State::PlaceElement { ref element, rotation_cw } => {
                 match button {
                     input::MouseButton::Left => {
                         // Use cursor pos as center if possible
@@ -406,8 +406,8 @@ impl Hud {
         display: &Display
     ) -> GameResult<()> {
         // Draw current state 
-        match self.state {
-            State::PlaceElement { element, rotation_cw } => {
+        match self.state.clone() {
+            State::PlaceElement { ref element, rotation_cw } => {
                 // Use cursor pos as center if possible
                 let c = self.grid_coords - element.descr().size / 2;
 
