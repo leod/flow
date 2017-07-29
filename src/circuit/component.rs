@@ -1,3 +1,5 @@
+use std::cmp;
+
 use cgmath::Zero;
 
 use types::{Dir, Rect};
@@ -14,7 +16,9 @@ pub type ChipId = usize;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ChipDescr {
-    element_descr: ElementDescr,
+    pub inner_size: circuit::Coords,
+    pub left_size: usize,
+    pub right_size: usize
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -99,8 +103,18 @@ impl Element {
                 (circuit::Coords::new(0, 0),
                  vec![(Dir::Left, 0), (Dir::Left, 0)],
                  Some(vec![vec![Dir::Left], vec![Dir::Right]])),
-            &Element::Chip(ref _id, ref descr) =>
-                return descr.element_descr.clone()
+            &Element::Chip(ref _id, ref descr) => {
+                let height = cmp::max(descr.left_size, descr.right_size);
+                let left_cells = (0..descr.left_size).map(|i| (Dir::Left, i));
+                let right_cells = (0..descr.right_size).map(|i| (Dir::Right, i));
+                let cells = left_cells.chain(right_cells).collect();
+                let left_edges = (0..descr.left_size).map(|_| vec![Dir::Left]);
+                let right_edges = (0..descr.right_size).map(|_| vec![Dir::Right]);
+                let edges = left_edges.chain(right_edges).collect();
+                (circuit::Coords::new(1, height as isize),
+                 cells,
+                 Some(edges))
+            }
         };
         
         let cell_edges = match cell_edges {
