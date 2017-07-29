@@ -113,6 +113,19 @@ fn update_components(state: &mut State) {
                     edge.enabled = enabled;
                 }
             }
+            Element::Power => {
+                let threshold = 0.01;
+                let enabled = {
+                    let control_node_idx = component.cells[0];
+                    let control_cell = state.flow.node(control_node_idx);
+                    control_cell.in_flow > threshold
+                };
+                
+                let power_cell_idx = component.cells[1];
+                let power_cell = state.flow.node_mut(power_cell_idx);
+                power_cell.bound_pressure = enabled;
+                power_cell.pressure = 100.0;
+            }
             _ => {}
         }
     }

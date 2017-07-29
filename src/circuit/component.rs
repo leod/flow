@@ -17,7 +17,8 @@ pub enum Element {
     Source,
     Sink,
     Input { size: usize },
-    Output { size: usize }
+    Output { size: usize },
+    Power
 }
 
 pub struct ElementDescr {
@@ -84,6 +85,10 @@ impl Element {
                 (circuit::Coords::new(0, size as isize - 1),
                  (0..size).map(|i| (Dir::Left, i)).collect(),
                  None),
+            Element::Power =>
+                (circuit::Coords::new(0, 0),
+                 vec![(Dir::Left, 0), (Dir::Left, 0)],
+                 Some(vec![vec![Dir::Left], vec![Dir::Right]]))
         };
         
         let cell_edges = match cell_edges {

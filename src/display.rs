@@ -31,6 +31,7 @@ impl DrawMode {
 pub struct Display {
 }
 
+// TODO: Clean up: significant overlap between draw_component and draw_flow
 impl Display {
     pub fn new() -> Display {
         Display {
@@ -276,6 +277,33 @@ impl Display {
                 };
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r_small)?;
             }
+            Element::Power => {
+                // Corner position of the nodes
+                let dir = Dir::Left.rotate_cw_n(c.rotation_cw);
+                let orth_dir = dir.rotate_cw();
+                let left = c.pos.cast() + dir.invert().delta().cast() / 4.0;
+                let x = left + orth_dir.delta().cast() / 4.0;
+                let y = left + orth_dir.invert().delta().cast() / 4.0;
+                let z = c.pos.cast() + dir.delta().cast() / 4.0;
+                
+                let x_t = camera.transform(x * EDGE_LENGTH);
+                let y_t = camera.transform(y * EDGE_LENGTH);
+                let z_t = camera.transform(z * EDGE_LENGTH);
+                
+                let vertices = vec![
+                    graphics::Point {
+                        x: x_t.x, y: x_t.y
+                    },
+                    graphics::Point {
+                        x: y_t.x, y: y_t.y
+                    },
+                    graphics::Point {
+                        x: z_t.x, y: z_t.y
+                    }
+                ];
+                
+                graphics::polygon(ctx, graphics::DrawMode::Fill, &vertices)?;
+            }
         }
         
         Ok(())
@@ -333,7 +361,32 @@ impl Display {
                                          1.0 * (1.0 - pressure/100.0),
                                          1.0))?;
                 
-                if c.element != Element::Source && c.element != Element::Sink {
+                if c.element == Element::Power {
+                    let dir = Dir::Left.rotate_cw_n(c.rotation_cw);
+                    let orth_dir = dir.rotate_cw();
+                    let left = c.pos.cast() + dir.invert().delta().cast() / 4.0;
+                    let x = left + orth_dir.delta().cast() / 4.0;
+                    let y = left + orth_dir.invert().delta().cast() / 4.0;
+                    let z = c.pos.cast() + dir.delta().cast() / 4.0;
+                    
+                    let x_t = camera.transform(x * EDGE_LENGTH);
+                    let y_t = camera.transform(y * EDGE_LENGTH);
+                    let z_t = camera.transform(z * EDGE_LENGTH);
+                    
+                    let vertices = vec![
+                        graphics::Point {
+                            x: x_t.x, y: x_t.y
+                        },
+                        graphics::Point {
+                            x: y_t.x, y: y_t.y
+                        },
+                        graphics::Point {
+                            x: z_t.x, y: z_t.y
+                        }
+                    ];
+                    
+                    graphics::polygon(ctx, graphics::DrawMode::Fill, &vertices)?;
+                } else if c.element != Element::Source && c.element != Element::Sink {
                     let r = graphics::Rect {
                         x: p_t.x,
                         y: p_t.y,

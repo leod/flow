@@ -149,6 +149,13 @@ impl State {
                         output_cells[cell_index] = node_idx_counter;
                         Some(0.0)
                     }
+                    Element::Power => {
+                        if cell_index == 0 {
+                            Some(0.0)
+                        } else {
+                            None
+                        }
+                    }
                 };
                 
                 node_idx_counter += 1;
