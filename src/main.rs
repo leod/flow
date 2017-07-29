@@ -3,6 +3,7 @@ extern crate cgmath;
 extern crate floating_duration;
 extern crate rulinalg;
 extern crate rand;
+extern crate sdl2;
 
 mod types;
 mod display;
@@ -27,7 +28,7 @@ use ggez::event::{self, MouseButton, MouseState, Mod};
 use ggez::{GameResult, Context};
 use ggez::graphics;
 
-use circuit::Circuit;
+use circuit::{ChipDb, Circuit};
 use display::Display;
 use hud::Hud;
 use camera::Camera;
@@ -36,7 +37,10 @@ use input::{Input, Keycode};
 use level::{Level, LevelState};
 
 struct MainState {
+    chip_db: ChipDb,
+
     circuit: Circuit,
+
     level: Level,
     level_state: Option<LevelState>,
 
@@ -54,6 +58,7 @@ impl MainState {
         graphics::set_background_color(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
         let level = test_level::test_level();
         let s = MainState {
+            chip_db: ChipDb::init(10),
             circuit: level.new_circuit(),
             level: level,
             level_state: None,
@@ -69,7 +74,8 @@ impl MainState {
     fn input_event(&mut self, input: &Input) {
         // Only allow changing the circuit when not simulating
         if self.level_state.is_none() {
-            self.hud.input_event(&mut self.circuit, &self.camera, input);
+            self.hud.input_event(&mut self.circuit, &mut self.chip_db,
+                                 &self.camera, input);
         }
 
         self.camera_input.input_event(&mut self.camera, input);
@@ -79,23 +85,28 @@ impl MainState {
                 self.level_state = match &self.level_state {
                     &Some(_) => None,
                     &None => Some(self.level.new_state(&self.circuit))
-                }
-
-            }
-            &Input::KeyDown { keycode: Keycode::T, keymod: _, repeat: _ } => {
-                let finished = if let &mut Some(ref mut level_state) = &mut self.level_state {
-                    if let Some(outcome) = level_state.time_step() {
-                        println!("level outcome: {:?}", outcome);
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    false
                 };
-                
-                if finished {
-                    self.level_state = None;
+                if self.level_state.is_some() {
+                    self.hud.switch_chip(&None);
+                }
+            }
+            &Input::KeyDown { keycode, keymod: _, repeat: _ } => {
+                if keycode == Keycode::T {
+                    let finished =
+                        if let &mut Some(ref mut level_state) = &mut self.level_state {
+                            if let Some(outcome) = level_state.time_step() {
+                                println!("level outcome: {:?}", outcome);
+                                true
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        };
+                    
+                    if finished {
+                        self.level_state = None;
+                    }
                 }
             }
             _ => {}
@@ -108,7 +119,7 @@ impl event::EventHandler for MainState {
         let dt_s = dt.as_fractional_secs() as f32;
 
         self.camera_input.update(&mut self.camera, dt_s);
-        self.hud.update(ctx, &mut self.circuit, &self.camera, dt_s);
+        self.hud.update(ctx, &mut self.circuit, &mut self.chip_db, &self.camera, dt_s);
 
         Ok(())
     }
@@ -116,15 +127,18 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        self.display.draw_grid_edges(ctx, &self.camera, &self.circuit)?;
-        self.display.draw_components(ctx, &self.camera, &self.circuit)?;
+        let circuit = self.hud.cur_circuit(&self.circuit, &self.chip_db);
+        self.display.draw_grid_edges(ctx, &self.camera, circuit)?;
+        self.display.draw_components(ctx, &self.camera, circuit)?;
 
         if let &Some(ref level_state) = &self.level_state {
-            let flow = &level_state.flow;
-            self.display.draw_flow(ctx, &self.camera, &self.circuit, flow)?;
-            //self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
+            if self.hud.cur_chip_id().is_none() {
+                let flow = &level_state.flow;
+                self.display.draw_flow(ctx, &self.camera, &self.circuit, flow)?;
+                //self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
+            }
         } else {
-            self.hud.draw(ctx, &self.camera, &self.circuit, &self.display)?;
+            self.hud.draw(ctx, &self.circuit, &self.chip_db, &self.camera, &self.display)?;
         }
 
         graphics::present(ctx);
