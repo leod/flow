@@ -62,7 +62,7 @@ pub fn test_level() -> Level {
         input_size: 2,
         input_pos: circuit::Coords::new(0, 0),
         output_size: 2,
-        output_pos: circuit::Coords::new(10, 0),
+        output_pos: circuit::Coords::new(20, 0),
         create_impl: Box::new(|| {
             let seq = (1..4).map(|_| rand::thread_rng().gen()).collect();
             let state = TestLevel {

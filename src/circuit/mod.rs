@@ -127,7 +127,7 @@ impl Circuit {
                             // of cell edges to the left is the same for the chip component
                             // as well as the left input inside the chip circuit.
                             let left_cells = chip_element_descr.cells.iter().enumerate()
-                                .filter( |&(_i, &(dir, _k))| dir == Dir::Left)
+                                .filter(|&(_i, &(dir, _k))| dir == Dir::Left)
                                 .map(|(i, _)| i);
                                 
                             for (inner_cell_index, cell_index) in left_cells.enumerate() {
