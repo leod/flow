@@ -98,6 +98,7 @@ impl Display {
     pub fn draw_component(
         &self,
         ctx: &mut Context,
+        font: &graphics::Font,
         camera: &Camera,
         c: &Component,
         mode: DrawMode
@@ -323,6 +324,11 @@ impl Display {
                 };
 
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+
+                let chip_str = format!("{:?}", chip_id);
+                let chip_text = graphics::Text::new(ctx, &chip_str, font)?;
+                let chip_text_pos = graphics::Point::new(center.x, center.y);
+                chip_text.draw(ctx, chip_text_pos, 0.0)?;
             }
         }
         
@@ -332,11 +338,12 @@ impl Display {
     pub fn draw_components(
         &self,
         ctx: &mut Context,
+        font: &graphics::Font,
         camera: &Camera,
         circuit: &Circuit,
     ) -> GameResult<()> {
         for (ref _id, ref c) in circuit.components().iter() {
-            self.draw_component(ctx, camera, c, DrawMode::Real)?;
+            self.draw_component(ctx, font, camera, c, DrawMode::Real)?;
         }
 
         Ok(())
@@ -345,6 +352,7 @@ impl Display {
     pub fn draw_flow(
         &self,
         ctx: &mut Context,
+        font: &graphics::Font,
         camera: &Camera,
         circuit: &Circuit,
         state: &flow::State
@@ -417,7 +425,7 @@ impl Display {
                     graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
                     
                     if is_bridge_inner {
-                        self.draw_component(ctx, camera, c, DrawMode::Real)?;
+                        self.draw_component(ctx, font, camera, c, DrawMode::Real)?;
                     }
                 } else {
                     graphics::circle(ctx, graphics::DrawMode::Fill,
