@@ -157,7 +157,7 @@ impl State {
                         }
                     }
                     &Element::Chip(..) => {
-                        panic!("chips need to be unfolded before creating state")
+                        None
                     }
                 };
                 

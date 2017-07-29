@@ -2,11 +2,14 @@ use std::collections::HashMap;
 
 use cgmath::Zero;
 
-use super::{Coords, ChipId, ChipDescr, Element, Circuit, Action};
+use super::{Coords, ComponentId, ChipId, ChipDescr,
+    Element, Circuit, Action};
 
 pub struct Chip {
-    descr: ChipDescr,
-    circuit: Circuit,
+    pub descr: ChipDescr,
+    pub circuit: Circuit,
+    pub left_input_id: ComponentId,
+    pub right_input_id: ComponentId,
 }
 
 pub struct ChipDb {
@@ -14,25 +17,27 @@ pub struct ChipDb {
 }
 
 impl ChipDb {
-    fn new_circuit(descr: &ChipDescr) -> Circuit {
+    fn new_circuit(descr: &ChipDescr) -> (Circuit, ComponentId, ComponentId) {
         let mut circuit = Circuit::new();
         
-        {
+        let left_id = {
             let element = Element::Input { size: descr.left_size };
             let pos = Coords::zero();
             let component = element.new_component(pos, 0);
             let action = Action::PlaceComponent(component);
             action.perform(&mut circuit);
-        }
-        {
+            circuit.get_last_component_id().unwrap()
+        };
+        let right_id = {
             let element = Element::Input { size: descr.right_size };
             let pos = Coords::new(descr.inner_size.x, 0);
             let component = element.new_component(pos, 0);
             let action = Action::PlaceComponent(component);
             action.perform(&mut circuit);
-        }
+            circuit.get_last_component_id().unwrap()
+        };
         
-        circuit
+        (circuit, left_id, right_id)
     }
 
     pub fn init(n_chips: usize) -> ChipDb {
@@ -43,8 +48,13 @@ impl ChipDb {
                     left_size: 3,
                     right_size: 2
                 };
-                let circuit = Self::new_circuit(&descr);
-                let chip = Chip { descr, circuit };
+                let (circuit, left_input_id, right_input_id) = Self::new_circuit(&descr);
+                let chip = Chip {
+                    descr,
+                    circuit,
+                    left_input_id,
+                    right_input_id
+                };
 
                 (i, chip)
             }).collect();

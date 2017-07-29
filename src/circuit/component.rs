@@ -106,7 +106,7 @@ impl Element {
             &Element::Chip(ref _id, ref descr) => {
                 let height = cmp::max(descr.left_size, descr.right_size);
                 let left_cells = (0..descr.left_size).map(|i| (Dir::Left, i));
-                let right_cells = (0..descr.right_size).map(|i| (Dir::Right, i));
+                let right_cells = (0..descr.right_size).map(|i| (Dir::Right, i)).rev();
                 let cells = left_cells.chain(right_cells).collect();
                 let left_edges = (0..descr.left_size).map(|_| vec![Dir::Left]);
                 let right_edges = (0..descr.right_size).map(|_| vec![Dir::Right]);
