@@ -161,6 +161,12 @@ impl Hud {
                             rotation_cw: 0,
                         });
                     }
+                    input::Keycode::Num7 => {
+                        self.change_state(State::PlaceElement {
+                            element: Element::Power,
+                            rotation_cw: 0,
+                        });
+                    }
                     _ => {}
                 }
 
