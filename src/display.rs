@@ -105,8 +105,8 @@ impl Display {
 
         let p_t = camera.transform(c.pos.cast() * EDGE_LENGTH);
 
-        match c.element {
-            Element::Node => {
+        match &c.element {
+            &Element::Node => {
                 let r = graphics::Rect {
                     x: p_t.x,
                     y: p_t.y,
@@ -116,7 +116,7 @@ impl Display {
 
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
             }
-            Element::Bridge => {
+            &Element::Bridge => {
                 let r = graphics::Rect {
                     x: p_t.x,
                     y: p_t.y,
@@ -154,7 +154,7 @@ impl Display {
                 graphics::line(ctx, &vec![a_p, a_end_p])?;
                 graphics::line(ctx, &vec![b_p, b_end_p])?;
             }
-            Element::Switch(kind) => {
+            &Element::Switch(kind) => {
                 let control_p_t =
                     camera.transform(c.cells[0].cast() * EDGE_LENGTH);
                 let flow_p_t = camera.transform(c.cells[1].cast() * EDGE_LENGTH);
@@ -189,7 +189,7 @@ impl Display {
                         50)?;
                 }
             }
-            Element::Source | Element::Sink => {
+            &Element::Source | &Element::Sink => {
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                     * EDGE_LENGTH;
                 let trans_size = camera.transform_delta(size);
@@ -221,7 +221,7 @@ impl Display {
                                      50)?;
                 }
             }
-            Element::Input { size } => {
+            &Element::Input { size } => {
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                     * EDGE_LENGTH;
                 let size_small = (c.size().cast() + Vector2::new(0.25, 0.25))
@@ -250,7 +250,7 @@ impl Display {
                     graphics::Color::new(0.0, 0.0, 0.0, 1.0))?;
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, r_small)?;
             }
-            Element::Output { size } => {
+            &Element::Output { size } => {
                 let size = (c.size().cast() + Vector2::new(0.5, 0.5))
                     * EDGE_LENGTH;
                 let size_small = (c.size().cast() + Vector2::new(0.25, 0.25))
@@ -277,7 +277,7 @@ impl Display {
                 };
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r_small)?;
             }
-            Element::Power => {
+            &Element::Power => {
                 // Corner position of the nodes
                 let dir = Dir::Left.rotate_cw_n(c.rotation_cw);
                 let orth_dir = dir.rotate_cw();
@@ -303,6 +303,18 @@ impl Display {
                 ];
                 
                 graphics::polygon(ctx, graphics::DrawMode::Fill, &vertices)?;
+            }
+            &Element::Chip(ref chip_id, ref chip_descr) => {
+                let size = (c.size().cast() + Vector2::new(0.5, 0.5))
+                    * EDGE_LENGTH;
+                let r = graphics::Rect {
+                    x: p_t.x,
+                    y: p_t.y,
+                    w: size.x,
+                    h: size.y
+                };
+
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
             }
         }
         

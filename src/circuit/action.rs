@@ -31,11 +31,11 @@ impl Action {
                 let point = circuit.points.get(&pos);
                 
                 if let Some(component_id) = point {
-                    let element = circuit.components
+                    let element = &circuit.components
                         .get(&component_id).unwrap().element;
                     match element {
-                        Element::Input { .. } => false,
-                        Element::Output { .. } => false,
+                        &Element::Input { .. } => false,
+                        &Element::Output { .. } => false,
                         _ => true
                     }
                 } else {

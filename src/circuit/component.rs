@@ -9,7 +9,15 @@ pub enum SwitchType {
     Off
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+// Might be changed to a string later on
+pub type ChipId = usize;
+
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub struct ChipDescr {
+    element_descr: ElementDescr,
+}
+
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Element {
     Node,
     Bridge,
@@ -18,9 +26,11 @@ pub enum Element {
     Sink,
     Input { size: usize },
     Output { size: usize },
-    Power
+    Power,
+    Chip(ChipId, ChipDescr)
 }
 
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ElementDescr {
     // Width and height. Each element occupies a rect of grid points.
     pub size: circuit::Coords,
@@ -55,40 +65,42 @@ pub struct Component {
 
 impl Element {
     pub fn descr(&self) -> ElementDescr {
-        let (size, cells, cell_edges) = match *self {
-            Element::Node =>
+        let (size, cells, cell_edges) = match self {
+            &Element::Node =>
                 (circuit::Coords::new(0, 0),
                  vec![(Dir::Left, 0)],
                  None),
-            Element::Bridge =>
+            &Element::Bridge =>
                 (circuit::Coords::new(0, 0),
                  vec![(Dir::Left, 0), (Dir::Left, 0)],
                  Some(vec![vec![Dir::Up, Dir::Down],
                            vec![Dir::Left, Dir::Right]])),
-            Element::Switch(_) =>
+            &Element::Switch(_) =>
                 (circuit::Coords::new(1, 0),
                  vec![(Dir::Left, 0), (Dir::Right, 0)],
                  None),
-            Element::Source => 
+            &Element::Source => 
                 (circuit::Coords::new(0, 0),
                  vec![(Dir::Right, 0)],
                  None),
-            Element::Sink =>
+            &Element::Sink =>
                 (circuit::Coords::new(0, 0),
                  vec![(Dir::Left, 0)],
                  None),
-            Element::Input { size } =>
-                (circuit::Coords::new(0, size as isize - 1),
-                 (0..size).map(|i| (Dir::Left, i)).collect(),
+            &Element::Input { ref size } =>
+                (circuit::Coords::new(0, *size as isize - 1),
+                 (0..*size).map(|i| (Dir::Left, i)).collect(),
                  None),
-            Element::Output { size } =>
-                (circuit::Coords::new(0, size as isize - 1),
-                 (0..size).map(|i| (Dir::Left, i)).collect(),
+            &Element::Output { ref size } =>
+                (circuit::Coords::new(0, *size as isize - 1),
+                 (0..*size).map(|i| (Dir::Left, i)).collect(),
                  None),
-            Element::Power =>
+            &Element::Power =>
                 (circuit::Coords::new(0, 0),
                  vec![(Dir::Left, 0), (Dir::Left, 0)],
-                 Some(vec![vec![Dir::Left], vec![Dir::Right]]))
+                 Some(vec![vec![Dir::Left], vec![Dir::Right]])),
+            &Element::Chip(ref _id, ref descr) =>
+                return descr.element_descr.clone()
         };
         
         let cell_edges = match cell_edges {
@@ -146,7 +158,7 @@ impl Element {
             }).collect()).collect();
 
         Component {
-            element: *self,
+            element: self.clone(),
             pos: top_left_pos,
             rotation_cw,
             rect,

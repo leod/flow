@@ -75,7 +75,7 @@ impl State {
             }).collect();
         
         Component {
-            element: component.element,
+            element: component.element.clone(),
             cells: cells
         }
     }
@@ -114,22 +114,22 @@ impl State {
                 let component =
                     circuit.components().get(&component_id).unwrap();
                 
-                let pressure = match component.element {
-                    Element::Node => {
+                let pressure = match &component.element {
+                    &Element::Node => {
                         None
                     }
-                    Element::Bridge => {
+                    &Element::Bridge => {
                         None
                     }
-                    Element::Source => {
+                    &Element::Source => {
                         source_cells.push(node_idx_counter);
                         Some(100.0)
                     }
-                    Element::Sink => {
+                    &Element::Sink => {
                         sink_cells.push(node_idx_counter);
                         Some(0.0)
                     }
-                    Element::Switch(_kind) => {
+                    &Element::Switch(_kind) => {
                         if cell_index == 0 {
                             sink_cells.push(node_idx_counter);
                             Some(0.0)
@@ -137,24 +137,27 @@ impl State {
                             None
                         }
                     }
-                    Element::Input { size } => {
+                    &Element::Input { size } => {
                         source_cells.push(node_idx_counter);
                         input_cells.resize(size, 0);
                         input_cells[cell_index] = node_idx_counter;
                         Some(100.0)
                     }
-                    Element::Output { size } => {
+                    &Element::Output { size } => {
                         sink_cells.push(node_idx_counter);
                         output_cells.resize(size, 0);
                         output_cells[cell_index] = node_idx_counter;
                         Some(0.0)
                     }
-                    Element::Power => {
+                    &Element::Power => {
                         if cell_index == 0 {
                             Some(0.0)
                         } else {
                             None
                         }
+                    }
+                    &Element::Chip(..) => {
+                        panic!("chips need to be unfolded before creating state")
                     }
                 };
                 
