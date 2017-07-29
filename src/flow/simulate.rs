@@ -1,3 +1,4 @@
+use rulinalg;
 use rulinalg::matrix::{Matrix, BaseMatrix};
 use rulinalg::vector::Vector;
 
@@ -5,11 +6,11 @@ use circuit::{Element, SwitchType};
 use flow::state::{State, edge_quantity};
 
 #[allow(non_snake_case)]
-fn solve_pressure(state: &mut State) {
+fn solve_pressure(state: &mut State) -> Result<(), rulinalg::error::Error> {
     let num_v = state.mut_idx_to_node_idx.len();
     
     if num_v == 0 {
-        return;
+        return Ok(());
     }
     
     let mut A = Matrix::<f64>::zeros(num_v, num_v); // system
@@ -62,10 +63,10 @@ fn solve_pressure(state: &mut State) {
     // solve this linear system (vll leo sagt 'shit')
     //let x = A.solve(b).unwrap();
     
-    let L = (-A).cholesky().unwrap();
+    let L = (-A).cholesky()?;
     //println!("L: {:?}", L);
-    let y = L.solve_l_triangular((-b)).unwrap();
-    let x = L.transpose().solve_u_triangular(y).unwrap();
+    let y = L.solve_l_triangular((-b))?;
+    let x = L.transpose().solve_u_triangular(y)?;
 
     // output pressures
     //println!("{:?}", x);
@@ -76,6 +77,8 @@ fn solve_pressure(state: &mut State) {
     }
 
     //println!("pressures: {:?}", (0..state.graph.num_nodes()).map(|i| state.flow.node(i).pressure).collect::<Vec<_>>());
+
+    Ok(())
 }
 
 fn project_velocities(state: &mut State) {
@@ -235,7 +238,10 @@ fn flow(state: &mut State) {
 pub fn time_step(state: &mut State, _dt: f64) {
     update_components(state);
     state.update_mut_indices();
-    solve_pressure(state);
+    if let Err(err) = solve_pressure(state) {
+        println!("Can't solve pressure: {:?}", err);
+        return;
+    }
     project_velocities(state);
     flow(state);
 }
