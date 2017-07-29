@@ -46,11 +46,15 @@ impl Display {
         graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
 
         for (&(cell_a, cell_b), &_edge) in circuit.graph().edges().iter() {
-            let a = circuit.graph().get_node(cell_a).unwrap();
-            let b = circuit.graph().get_node(cell_b).unwrap();
+            let a = *circuit.graph().get_node(cell_a).unwrap();
+            let b = *circuit.graph().get_node(cell_b).unwrap();
+            let dir = Dir::from_coords(a, b);
+            
+            let a_corner = a.cast() + dir.delta().cast() * 0.25;
+            let b_corner = b.cast() + dir.invert().delta().cast() * 0.25;
 
-            let a_t = camera.transform(a.cast() * EDGE_LENGTH);
-            let b_t = camera.transform(b.cast() * EDGE_LENGTH);
+            let a_t = camera.transform(a_corner.cast() * EDGE_LENGTH);
+            let b_t = camera.transform(b_corner.cast() * EDGE_LENGTH);
 
             let a_p = graphics::Point::new(a_t.x, a_t.y);
             let b_p = graphics::Point::new(b_t.x, b_t.y);
@@ -84,7 +88,6 @@ impl Display {
                     graphics::line(ctx, &vec![a_p, b_p])?;
                 }
             }
-
         }
 
         Ok(())
@@ -112,15 +115,43 @@ impl Display {
 
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
             }
-            Element::Node => {
+            Element::Bridge => {
                 let r = graphics::Rect {
                     x: p_t.x,
                     y: p_t.y,
                     w: camera.transform_distance(EDGE_LENGTH / 2.0),
                     h: camera.transform_distance(EDGE_LENGTH / 2.0)
                 };
+                let inner_r = graphics::Rect {
+                    x: p_t.x,
+                    y: p_t.y,
+                    w: camera.transform_distance(EDGE_LENGTH / 4.0),
+                    h: camera.transform_distance(EDGE_LENGTH / 4.0)              
+                };
 
+                graphics::set_color(ctx, mode.to_color())?;
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+                graphics::rectangle(ctx, graphics::DrawMode::Line, inner_r)?;
+                
+                let left = Dir::Left.rotate_cw_n(c.rotation_cw);
+                let a = c.pos.cast() + left.delta().cast() * 0.25;
+                let b = a + left.invert().delta().cast() * 0.5;
+                
+                let a_end = a + left.invert().delta().cast() * 0.125;
+                let b_end = b + left.delta().cast() * 0.125;
+                
+                let a_t = camera.transform(a * EDGE_LENGTH);
+                let b_t = camera.transform(b * EDGE_LENGTH);
+                let a_end_t = camera.transform(a_end * EDGE_LENGTH);
+                let b_end_t = camera.transform(b_end * EDGE_LENGTH);
+                
+                let a_p = graphics::Point::new(a_t.x, a_t.y);
+                let b_p = graphics::Point::new(b_t.x, b_t.y);
+                let a_end_p = graphics::Point::new(a_end_t.x, a_end_t.y);
+                let b_end_p = graphics::Point::new(b_end_t.x, b_end_t.y);
+                
+                graphics::line(ctx, &vec![a_p, a_end_p])?;
+                graphics::line(ctx, &vec![b_p, b_end_p])?;
             }
             Element::Switch(kind) => {
                 let control_p_t =
@@ -165,7 +196,7 @@ impl Display {
                 let trans_shift = camera.transform_delta(shift);
                 let center = p_t + trans_shift;
 
-                self.draw_component_edges(ctx, camera, c)?;
+                //self.draw_component_edges(ctx, camera, c)?;
 
                 let r = graphics::Rect {
                     x: center.x,
@@ -275,10 +306,18 @@ impl Display {
                 let cell_id = (id, cell_index);
                 let node_index = state.graph.node_index(cell_id);
                 let cell = state.flow.node(node_index);
+                let is_bridge_inner =
+                    c.element == Element::Bridge && cell_index == 1;
 
                 let p = c.cells[cell_index].cast();
                 let p_t = camera.transform(p * EDGE_LENGTH);
                 let size = camera.transform_distance(EDGE_LENGTH * 0.4);
+                let size =
+                    if is_bridge_inner {
+                        size / 2.0
+                    } else {
+                        size
+                    };
                 let r = graphics::Rect {
                     x: p_t.x,
                     y: p_t.y,
@@ -293,6 +332,10 @@ impl Display {
                                          1.0 * (1.0 - pressure/100.0),
                                          1.0))?;
                 graphics::rectangle(ctx, graphics::DrawMode::Fill, r)?;
+                
+                if is_bridge_inner {
+                    self.draw_component(ctx, camera, c, DrawMode::Real)?;
+                }
             }
         }
         
@@ -310,7 +353,7 @@ impl Display {
             let edge_index = state.graph.edge_index(cell_id_a, cell_id_b);
             let edge = state.flow.edge(edge_index);
             
-            if edge.enabled {
+            /*if edge.enabled {
                 let a_t = camera.transform(a_p.cast() * EDGE_LENGTH);
                 let b_t = camera.transform(b_p.cast() * EDGE_LENGTH);
 
@@ -318,7 +361,7 @@ impl Display {
                 let b_point = graphics::Point::new(b_t.x, b_t.y);
 
                 graphics::line(ctx, &vec![a_point, b_point])?;
-            }
+            }*/
             
             let mut percent = edge.flow.abs() as f32 / 10.0; // TODO
             if percent > 1.5 {
