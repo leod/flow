@@ -84,7 +84,11 @@ impl MainState {
             &Input::KeyDown { keycode: Keycode::Space, keymod: _, repeat: _ } => {
                 self.level_state = match &self.level_state {
                     &Some(_) => None,
-                    &None => Some(self.level.new_state(&self.circuit))
+                    &None => {
+                        // Start simulation 
+                        let unfolded_circuit = self.circuit.unfold(&self.chip_db);
+                        Some(self.level.new_state(&unfolded_circuit))
+                    }
                 };
                 if self.level_state.is_some() {
                     self.hud.switch_chip(&None);
