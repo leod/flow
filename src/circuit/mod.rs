@@ -75,6 +75,35 @@ impl Circuit {
         }
     }
 
+    // Returns a circuit that contains only the given components.
+    // Component IDs are preserved. Only edges between the cells of
+    // the given components are kept.
+    pub fn subcircuit(&self, ids: &HashSet<ComponentId>) -> Circuit {
+        let components = self.components.iter()
+            .filter(|&(id, _)| ids.contains(id))
+            .map(|(&id, c)| (id, c.clone()))
+            .collect::<HashMap<_, _>>();
+        let cell_ids = components.iter()
+            .flat_map(|(&id, c)|
+                       (0 .. c.cells.len())
+                           .map(|k| (id, k))
+                           .collect::<Vec<_>>())
+            .collect();
+        let graph = self.graph.subgraph(&cell_ids);
+        let points = self.points.iter()
+            .filter(|&(_pos, id)| ids.contains(id))
+            .map(|(&pos, &id)| (pos, id))
+            .collect();
+        let next_component_id = self.next_component_id;
+
+        Circuit {
+            components,
+            graph,
+            points,
+            next_component_id
+        }
+    }
+
     // Unfold this circuit by recursively instantiating chips.
     // This mean that chip components are replaced by the circuit, as it
     // is given in the chip database.
