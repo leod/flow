@@ -24,17 +24,17 @@ impl LevelImpl for TestLevel {
             state.flow.node_mut(state.input_cells[0]).enabled = false;
             state.flow.node_mut(state.input_cells[1]).enabled = false;
         }
-        
+
         if state.flow.node(state.output_cells[0]).in_flow > 0.001 {
             let output = state.flow.node(state.output_cells[1]).in_flow > 0.001;
             println!("read {}", output);
-            
+
             let idx = if self.reverse {
-                self.seq.len()-(self.read+1)
+                self.seq.len() - (self.read + 1)
             } else {
                 self.read
             };
-                
+
             if output != self.seq[idx] {
                 Some(Outcome::Failure)
             } else {
@@ -74,6 +74,6 @@ pub fn test_level() -> Level {
                 epochs: 0,
             };
             Box::new(state)
-        })
+        }),
     }
 }

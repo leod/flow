@@ -66,7 +66,7 @@ impl MainState {
             hud: Hud::new(ctx)?,
             display: Display::new(),
             camera: Camera::new(ctx.conf.window_width, ctx.conf.window_height, 30.0),
-            camera_input: CameraInput::new(8.0)
+            camera_input: CameraInput::new(8.0),
         };
         Ok(s)
     }
@@ -74,18 +74,26 @@ impl MainState {
     fn input_event(&mut self, input: &Input) {
         // Only allow changing the circuit when not simulating
         if self.level_state.is_none() {
-            self.hud.input_event(&mut self.circuit, &mut self.chip_db,
-                                 &self.camera, input);
+            self.hud.input_event(
+                &mut self.circuit,
+                &mut self.chip_db,
+                &self.camera,
+                input,
+            );
         }
 
         self.camera_input.input_event(&mut self.camera, input);
 
         match input {
-            &Input::KeyDown { keycode: Keycode::Space, keymod: _, repeat: _ } => {
+            &Input::KeyDown {
+                keycode: Keycode::Space,
+                keymod: _,
+                repeat: _,
+            } => {
                 self.level_state = match &self.level_state {
                     &Some(_) => None,
                     &None => {
-                        // Start simulation 
+                        // Start simulation
                         let unfolded_circuit = self.circuit.unfold(&self.chip_db);
                         if let Some(circuit) = unfolded_circuit {
                             Some(self.level.new_state(&circuit))
@@ -99,20 +107,23 @@ impl MainState {
                     self.hud.switch_chip(&None);
                 }
             }
-            &Input::KeyDown { keycode, keymod: _, repeat: _ } => {
+            &Input::KeyDown {
+                keycode,
+                keymod: _,
+                repeat: _,
+            } => {
                 if keycode == Keycode::T {
-                    let finished =
-                        if let &mut Some(ref mut level_state) = &mut self.level_state {
-                            if let Some(outcome) = level_state.time_step() {
-                                println!("level outcome: {:?}", outcome);
-                                true
-                            } else {
-                                false
-                            }
+                    let finished = if let &mut Some(ref mut level_state) = &mut self.level_state {
+                        if let Some(outcome) = level_state.time_step() {
+                            println!("level outcome: {:?}", outcome);
+                            true
                         } else {
                             false
-                        };
-                    
+                        }
+                    } else {
+                        false
+                    };
+
                     if finished {
                         self.level_state = None;
                     }
@@ -128,7 +139,13 @@ impl event::EventHandler for MainState {
         let dt_s = dt.as_fractional_secs() as f32;
 
         self.camera_input.update(&mut self.camera, dt_s);
-        self.hud.update(ctx, &mut self.circuit, &mut self.chip_db, &self.camera, dt_s);
+        self.hud.update(
+            ctx,
+            &mut self.circuit,
+            &mut self.chip_db,
+            &self.camera,
+            dt_s,
+        );
 
         Ok(())
     }
@@ -138,16 +155,33 @@ impl event::EventHandler for MainState {
 
         let circuit = self.hud.cur_circuit(&self.circuit, &self.chip_db);
         self.display.draw_grid_edges(ctx, &self.camera, circuit)?;
-        self.display.draw_components(ctx, &self.hud.font, &self.camera, circuit)?;
+        self.display.draw_components(
+            ctx,
+            &self.hud.font,
+            &self.camera,
+            circuit,
+        )?;
 
         if let &Some(ref level_state) = &self.level_state {
             if self.hud.cur_chip_id().is_none() {
                 let flow = &level_state.flow;
-                self.display.draw_flow(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
+                self.display.draw_flow(
+                    ctx,
+                    &self.hud.font,
+                    &self.camera,
+                    &self.circuit,
+                    flow,
+                )?;
                 //self.display.draw_flow_debug(ctx, &self.hud.font, &self.camera, &self.circuit, flow)?;
             }
         } else {
-            self.hud.draw(ctx, &self.circuit, &self.chip_db, &self.camera, &self.display)?;
+            self.hud.draw(
+                ctx,
+                &self.circuit,
+                &self.chip_db,
+                &self.camera,
+                &self.display,
+            )?;
         }
 
         graphics::present(ctx);
@@ -163,8 +197,8 @@ impl event::EventHandler for MainState {
     fn mouse_button_down_event(&mut self, button: MouseButton, x: i32, y: i32) {
         self.input_event(&Input::MouseButtonDown {
             button: button,
-            x: x, 
-            y: y
+            x: x,
+            y: y,
         });
     }
 
@@ -172,31 +206,21 @@ impl event::EventHandler for MainState {
         self.input_event(&Input::MouseButtonUp {
             button: button,
             x: x,
-            y: y
+            y: y,
         });
     }
 
     fn mouse_wheel_event(&mut self, x: i32, y: i32) {
-        self.input_event(&Input::MouseWheel {
-            x: x,
-            y: y
-        });
+        self.input_event(&Input::MouseWheel { x: x, y: y });
     }
 
-    fn mouse_motion_event(
-        &mut self, 
-        state: MouseState, 
-        x: i32, 
-        y: i32, 
-        xrel: i32, 
-        yrel: i32
-    ) {
+    fn mouse_motion_event(&mut self, state: MouseState, x: i32, y: i32, xrel: i32, yrel: i32) {
         self.input_event(&Input::MouseMotion {
             state: state,
             x: x,
             y: y,
             xrel: xrel,
-            yrel: yrel
+            yrel: yrel,
         });
     }
 
@@ -204,7 +228,7 @@ impl event::EventHandler for MainState {
         self.input_event(&Input::KeyDown {
             keycode: keycode,
             keymod: keymod,
-            repeat: repeat
+            repeat: repeat,
         });
     }
 
@@ -212,7 +236,7 @@ impl event::EventHandler for MainState {
         self.input_event(&Input::KeyUp {
             keycode: keycode,
             keymod: keymod,
-            repeat: repeat
+            repeat: repeat,
         });
     }
 }
@@ -229,4 +253,3 @@ pub fn main() {
         println!("Game exited cleanly.");
     }
 }
-

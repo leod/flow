@@ -19,17 +19,17 @@ enum State {
     Draw {
         last_grid_coords: circuit::Coords,
         axis_lock: Option<Axis>,
-        undo: Vec<Action>
+        undo: Vec<Action>,
     },
     PlaceElement {
         element: Element,
-        rotation_cw: usize
-    }
+        rotation_cw: usize,
+    },
 }
 
 pub struct Hud {
     pub font: graphics::Font,
-    
+
     cur_chip_id: Option<ChipId>,
 
     state: State,
@@ -83,7 +83,7 @@ impl Hud {
         //println!("undo: {:?}", undo_action);
 
         self.undo.push((self.cur_chip_id, undo_action));
-        
+
         // After a user action is performed, clear redo
         self.redo.clear();
     }
@@ -92,13 +92,11 @@ impl Hud {
         &self,
         chip_id: &Option<ChipId>,
         circuit: &'a mut Circuit,
-        chip_db: &'a mut ChipDb
+        chip_db: &'a mut ChipDb,
     ) -> &'a mut Circuit {
         match chip_id {
-            &Some(ref chip_id) =>
-                chip_db.get_circuit_mut(chip_id).unwrap(),
-            &None =>
-                circuit
+            &Some(ref chip_id) => chip_db.get_circuit_mut(chip_id).unwrap(),
+            &None => circuit,
         }
     }
 
@@ -106,29 +104,23 @@ impl Hud {
         &self,
         chip_id: &Option<ChipId>,
         circuit: &'a Circuit,
-        chip_db: &'a ChipDb
+        chip_db: &'a ChipDb,
     ) -> &'a Circuit {
         match chip_id {
-            &Some(ref chip_id) =>
-                chip_db.get_circuit(chip_id).unwrap(),
-            &None =>
-                circuit
+            &Some(ref chip_id) => chip_db.get_circuit(chip_id).unwrap(),
+            &None => circuit,
         }
     }
 
     fn cur_circuit_mut<'a>(
         &self,
         circuit: &'a mut Circuit,
-        chip_db: &'a mut ChipDb
+        chip_db: &'a mut ChipDb,
     ) -> &'a mut Circuit {
         self.circuit_mut(&self.cur_chip_id, circuit, chip_db)
     }
 
-    pub fn cur_circuit<'a>(
-        &self,
-        circuit: &'a Circuit,
-        chip_db: &'a ChipDb
-    ) -> &'a Circuit {
+    pub fn cur_circuit<'a>(&self, circuit: &'a Circuit, chip_db: &'a ChipDb) -> &'a Circuit {
         self.circuit(&self.cur_chip_id, circuit, chip_db)
     }
 
@@ -148,7 +140,7 @@ impl Hud {
             input::Keycode::F8 => Some(8),
             input::Keycode::F9 => Some(9),
             input::Keycode::F10 => Some(10),
-            _ => None
+            _ => None,
         }
     }
 
@@ -167,7 +159,7 @@ impl Hud {
                 } else {
                     None
                 }
-            },
+            }
             State::PlaceElement { .. } => None,
         };
 
@@ -176,15 +168,21 @@ impl Hud {
         }
     }
 
-	pub fn input_event(
+    pub fn input_event(
         &mut self,
         circuit: &mut Circuit,
         chip_db: &mut ChipDb,
         camera: &Camera,
-        input: &Input
+        input: &Input,
     ) {
         match input {
-            &Input::MouseMotion { state: _, x, y, xrel: _, yrel: _ } => {
+            &Input::MouseMotion {
+                state: _,
+                x,
+                y,
+                xrel: _,
+                yrel: _,
+            } => {
                 self.mouse_x = x;
                 self.mouse_y = y;
 
@@ -196,7 +194,11 @@ impl Hud {
             &Input::MouseButtonUp { button, x, y } => {
                 self.mouse_button_up_event(circuit, chip_db, camera, button, x, y);
             }
-            &Input::KeyDown { keycode, keymod, repeat: _ } => {
+            &Input::KeyDown {
+                keycode,
+                keymod,
+                repeat: _,
+            } => {
                 match keycode {
                     input::Keycode::LCtrl => {
                         self.hold_control = true;
@@ -251,7 +253,7 @@ impl Hud {
                                 let chip_descr = chip_db.get_descr(&chip_id).unwrap();
                                 self.change_state(State::PlaceElement {
                                     element: Element::Chip(chip_id, chip_descr.clone()),
-                                    rotation_cw: 0, 
+                                    rotation_cw: 0,
                                 });
                             }
                         }
@@ -260,7 +262,11 @@ impl Hud {
 
                 self.key_down_event(circuit, chip_db, camera, keycode);
             }
-            &Input::KeyUp { keycode, keymod: _, repeat: _ } => {
+            &Input::KeyUp {
+                keycode,
+                keymod: _,
+                repeat: _,
+            } => {
                 match keycode {
                     input::Keycode::LCtrl => {
                         self.hold_control = false;
@@ -278,7 +284,7 @@ impl Hud {
         _chip_db: &mut ChipDb,
         _camera: &Camera,
         _mouse_x: i32,
-        _mouse_y: i32
+        _mouse_y: i32,
     ) {
     }
 
@@ -289,7 +295,7 @@ impl Hud {
         camera: &Camera,
         button: input::MouseButton,
         x: i32,
-        y: i32
+        y: i32,
     ) {
         let cur_circuit = self.cur_circuit_mut(circuit, chip_db);
         let grid_coords = screen_to_grid_coords(camera, x, y);
@@ -298,15 +304,14 @@ impl Hud {
             State::Initial => {
                 match button {
                     input::MouseButton::Left => {
-                        let component = Element::Node
-                            .new_component(grid_coords, 0);
+                        let component = Element::Node.new_component(grid_coords, 0);
                         let action = Action::PlaceComponent(component);
                         let undo_action = action.try_perform(cur_circuit);
 
                         self.change_state(State::Draw {
                             last_grid_coords: grid_coords,
                             axis_lock: None,
-                            undo: undo_action.into_iter().collect()
+                            undo: undo_action.into_iter().collect(),
                         });
                     }
                     input::MouseButton::Right => {
@@ -316,7 +321,7 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::Draw { .. }  => {
+            State::Draw { .. } => {
                 match button {
                     input::MouseButton::Right => {
                         self.change_state(State::Initial);
@@ -324,7 +329,10 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::PlaceElement { ref element, rotation_cw } => {
+            State::PlaceElement {
+                ref element,
+                rotation_cw,
+            } => {
                 match button {
                     input::MouseButton::Left => {
                         // Use cursor pos as center if possible
@@ -338,7 +346,7 @@ impl Hud {
                         let action = Action::RemoveComponentAtPos(grid_coords);
                         self.try_perform_action(cur_circuit, action);
                     }
-                    _ =>  {}
+                    _ => {}
                 }
             }
         }
@@ -351,18 +359,18 @@ impl Hud {
         _camera: &Camera,
         button: input::MouseButton,
         _x: i32,
-        _y: i32
+        _y: i32,
     ) {
         match self.state {
             State::Initial => {}
-            State::Draw { .. }  => {
+            State::Draw { .. } => {
                 match button {
                     input::MouseButton::Left => {
                         self.change_state(State::Initial);
                     }
                     _ => {}
                 }
-            },
+            }
             State::PlaceElement { .. } => {}
         }
     }
@@ -375,7 +383,8 @@ impl Hud {
         keycode: input::Keycode,
     ) {
         match self.state {
-            State::Initial | State::PlaceElement { .. } => {
+            State::Initial |
+            State::PlaceElement { .. } => {
                 match keycode {
                     input::Keycode::Z => {
                         if self.hold_control == true {
@@ -406,9 +415,7 @@ impl Hud {
         match self.state {
             State::PlaceElement { ref mut rotation_cw, .. } => {
                 match keycode {
-                    input::Keycode::R => {
-                        *rotation_cw += 1
-                    }
+                    input::Keycode::R => *rotation_cw += 1,
                     _ => {}
                 }
             }
@@ -422,30 +429,29 @@ impl Hud {
         circuit: &mut Circuit,
         chip_db: &mut ChipDb,
         camera: &Camera,
-        _dt_s: f32
+        _dt_s: f32,
     ) {
         let cur_circuit = self.cur_circuit_mut(circuit, chip_db);
-        self.grid_coords = screen_to_grid_coords(camera,
-                                                 self.mouse_x,
-                                                 self.mouse_y);
+        self.grid_coords = screen_to_grid_coords(camera, self.mouse_x, self.mouse_y);
         match self.state {
             State::Initial => {}
-            State::Draw { ref mut last_grid_coords,
-                             ref mut axis_lock,
-                             ref mut undo } => {
+            State::Draw {
+                ref mut last_grid_coords,
+                ref mut axis_lock,
+                ref mut undo,
+            } => {
                 if !self.hold_control {
                     *axis_lock = None;
                 }
 
                 let locked_coords = match *axis_lock {
-                    Some(Axis::Horizontal) =>
-                        circuit::Coords::new(self.grid_coords.x,
-                                          last_grid_coords.y),
-                    Some(Axis::Vertical) =>
-                        circuit::Coords::new(last_grid_coords.x,
-                                          self.grid_coords.y),
-                    None =>
-                        self.grid_coords 
+                    Some(Axis::Horizontal) => {
+                        circuit::Coords::new(self.grid_coords.x, last_grid_coords.y)
+                    }
+                    Some(Axis::Vertical) => {
+                        circuit::Coords::new(last_grid_coords.x, self.grid_coords.y)
+                    }
+                    None => self.grid_coords, 
                 };
 
                 if locked_coords != *last_grid_coords {
@@ -457,8 +463,8 @@ impl Hud {
                     let min_y = cmp::min(locked_coords.y, last_grid_coords.y);
                     let max_y = cmp::max(locked_coords.y, last_grid_coords.y);
 
-                    let line_v = (min_x..max_x+1).zip(once(min_y).cycle());
-                    let line_h = once(max_x).cycle().zip(min_y..max_y+1);
+                    let line_v = (min_x..max_x + 1).zip(once(min_y).cycle());
+                    let line_h = once(max_x).cycle().zip(min_y..max_y + 1);
                     let lines = line_v.chain(line_h);
 
                     let mut prev_c = None;
@@ -478,7 +484,7 @@ impl Hud {
 
                                 let action = Action::PlaceEdgeAtPos(p, dir, Some(edge));
                                 if let Some(u_action) = action.try_perform(cur_circuit) {
-                                    undo.push(u_action); 
+                                    undo.push(u_action);
                                 }
 
                                 if self.hold_control && axis_lock.is_none() {
@@ -503,41 +509,47 @@ impl Hud {
         circuit: &Circuit,
         chip_db: &ChipDb,
         camera: &Camera,
-        display: &Display
+        display: &Display,
     ) -> GameResult<()> {
         let cur_circuit = self.cur_circuit(circuit, chip_db);
 
-        // Draw current state 
+        // Draw current state
         match self.state.clone() {
-            State::PlaceElement { ref element, rotation_cw } => {
+            State::PlaceElement {
+                ref element,
+                rotation_cw,
+            } => {
                 // Use cursor pos as center if possible
                 let c = self.grid_coords - element.descr().size / 2;
 
-                let component =
-                    element.new_component(c, rotation_cw);
+                let component = element.new_component(c, rotation_cw);
                 let action = Action::PlaceComponent(component.clone());
 
-                let draw_mode =
-                    if action.can_perform(cur_circuit) {
-                        display::DrawMode::Plan
-                    } else {
-                        display::DrawMode::Invalid
-                    };
+                let draw_mode = if action.can_perform(cur_circuit) {
+                    display::DrawMode::Plan
+                } else {
+                    display::DrawMode::Invalid
+                };
 
-                display.draw_component(ctx, &self.font, camera, &component, draw_mode)?; 
-            },
+                display.draw_component(
+                    ctx,
+                    &self.font,
+                    camera,
+                    &component,
+                    draw_mode,
+                )?;
+            }
             _ => {}
         }
 
         // Show grid coords that mouse is over
-        let grid_coords_t = camera.transform(
-            self.grid_coords.cast() * display::EDGE_LENGTH);
+        let grid_coords_t = camera.transform(self.grid_coords.cast() * display::EDGE_LENGTH);
 
         let r = graphics::Rect {
             x: grid_coords_t.x,
             y: grid_coords_t.y,
             w: camera.transform_distance(display::EDGE_LENGTH / 6.0),
-            h: camera.transform_distance(display::EDGE_LENGTH / 6.0)
+            h: camera.transform_distance(display::EDGE_LENGTH / 6.0),
         };
 
         graphics::set_color(ctx, graphics::Color::new(1.0, 0.0, 0.0, 1.0))?;
@@ -559,11 +571,10 @@ impl Hud {
 
         let chip_str = match self.cur_chip_id {
             Some(ref cur_chip_id) => format!("Chip {:?}", cur_chip_id),
-            None => format!("Main circuit")
+            None => format!("Main circuit"),
         };
         let chip_text = graphics::Text::new(ctx, &chip_str, &self.font)?;
-        let chip_text_pos = graphics::Point::new(
-            10.0 + chip_text.width() as f32 / 2.0, 30.0);
+        let chip_text_pos = graphics::Point::new(10.0 + chip_text.width() as f32 / 2.0, 30.0);
         chip_text.draw(ctx, chip_text_pos, 0.0)?;
 
         Ok(())
