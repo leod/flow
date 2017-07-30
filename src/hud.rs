@@ -16,7 +16,7 @@ use display::{self, Display};
 #[derive(PartialEq, Eq, Clone, Debug)]
 enum State {
     Initial,
-    Drawing {
+    Draw {
         last_grid_coords: circuit::Coords,
         axis_lock: Option<Axis>,
         undo: Vec<Action>
@@ -161,7 +161,7 @@ impl Hud {
     fn leave_state(&mut self) {
         let undo_action = match self.state {
             State::Initial => None,
-            State::Drawing { ref mut undo, .. } => {
+            State::Draw { ref mut undo, .. } => {
                 if undo.len() > 0 {
                     Some(Action::ReverseCompound(undo.clone()))
                 } else {
@@ -303,7 +303,7 @@ impl Hud {
                         let action = Action::PlaceComponent(component);
                         let undo_action = action.try_perform(cur_circuit);
 
-                        self.change_state(State::Drawing {
+                        self.change_state(State::Draw {
                             last_grid_coords: grid_coords,
                             axis_lock: None,
                             undo: undo_action.into_iter().collect()
@@ -316,7 +316,7 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::Drawing { .. }  => {
+            State::Draw { .. }  => {
                 match button {
                     input::MouseButton::Right => {
                         self.change_state(State::Initial);
@@ -355,7 +355,7 @@ impl Hud {
     ) {
         match self.state {
             State::Initial => {}
-            State::Drawing { .. }  => {
+            State::Draw { .. }  => {
                 match button {
                     input::MouseButton::Left => {
                         self.change_state(State::Initial);
@@ -430,7 +430,7 @@ impl Hud {
                                                  self.mouse_y);
         match self.state {
             State::Initial => {}
-            State::Drawing { ref mut last_grid_coords,
+            State::Draw { ref mut last_grid_coords,
                              ref mut axis_lock,
                              ref mut undo } => {
                 if !self.hold_control {
