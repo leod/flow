@@ -10,10 +10,11 @@ use sdl2::keyboard;
 use types::{Dir, Axis};
 use input::{self, Input};
 use camera::Camera;
-use circuit::{self, ChipId, ChipDb, Circuit, Action, SwitchType, Element};
+use circuit::{self, ChipId, ChipDb, CellId, Circuit, Action, SwitchType,
+              Element};
 use display::{self, Display};
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 enum State {
     Initial,
     Draw {
@@ -24,6 +25,12 @@ enum State {
     PlaceElement {
         element: Element,
         rotation_cw: usize,
+    },
+    Select { cells: Vec<CellId> },
+    BoxSelect {
+        start_grid_pos: Vector2<f32>,
+        cur_grid_pos: Vector2<f32>,
+        cells: Vec<CellId>,
     },
 }
 
@@ -38,18 +45,28 @@ pub struct Hud {
 
     mouse_x: i32,
     mouse_y: i32,
+
     hold_control: bool,
+    hold_shift: bool,
 
     grid_coords: circuit::Coords,
 }
 
-fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> circuit::Coords {
+fn screen_to_grid_pos(camera: &Camera, x: i32, y: i32) -> Vector2<f32> {
     let mouse_p_t = Vector2::new(x as f32, y as f32);
     let mouse_p = camera.untransform(mouse_p_t) / display::EDGE_LENGTH;
-    let g_x = mouse_p.x.round() as isize;
-    let g_y = mouse_p.y.round() as isize;
+    mouse_p
+}
+
+fn grid_pos_to_coords(p: Vector2<f32>) -> circuit::Coords {
+    let g_x = p.x.round() as isize;
+    let g_y = p.y.round() as isize;
 
     circuit::Coords::new(g_x, g_y)
+}
+
+fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> circuit::Coords {
+    grid_pos_to_coords(screen_to_grid_pos(camera, x, y))
 }
 
 impl Hud {
@@ -65,6 +82,7 @@ impl Hud {
             mouse_x: ctx.conf.window_width as i32 / 2,
             mouse_y: ctx.conf.window_height as i32 / 2,
             hold_control: false,
+            hold_shift: false,
             grid_coords: circuit::Coords::new(0, 0),
         };
         Ok(h)
@@ -165,6 +183,8 @@ impl Hud {
                 }
             }
             State::PlaceElement { .. } => None,
+            State::Select { .. } => None,
+            State::BoxSelect { .. } => None,
         };
 
         if let Some(u) = undo_action {
@@ -220,6 +240,9 @@ impl Hud {
                 match keycode {
                     input::Keycode::LCtrl => {
                         self.hold_control = true;
+                    }
+                    input::Keycode::LShift => {
+                        self.hold_shift = true;
                     }
                     input::Keycode::Num1 => {
                         self.change_state(State::Initial);
@@ -296,6 +319,9 @@ impl Hud {
                     input::Keycode::LCtrl => {
                         self.hold_control = false;
                     }
+                    input::Keycode::LShift => {
+                        self.hold_shift = false;
+                    }
                     _ => {}
                 }
             }
@@ -323,22 +349,31 @@ impl Hud {
         y: i32,
     ) {
         let cur_circuit = self.cur_circuit_mut(circuit, chip_db);
+        let grid_pos = screen_to_grid_pos(camera, x, y);
         let grid_coords = screen_to_grid_coords(camera, x, y);
 
         match self.state.clone() {
             State::Initial => {
                 match button {
                     input::MouseButton::Left => {
-                        let component =
-                            Element::Node.new_component(grid_coords, 0);
-                        let action = Action::PlaceComponent(component);
-                        let undo_action = action.try_perform(cur_circuit);
+                        if !self.hold_shift {
+                            let component =
+                                Element::Node.new_component(grid_coords, 0);
+                            let action = Action::PlaceComponent(component);
+                            let undo_action = action.try_perform(cur_circuit);
 
-                        self.change_state(State::Draw {
-                            last_grid_coords: grid_coords,
-                            axis_lock: None,
-                            undo: undo_action.into_iter().collect(),
-                        });
+                            self.change_state(State::Draw {
+                                last_grid_coords: grid_coords,
+                                axis_lock: None,
+                                undo: undo_action.into_iter().collect(),
+                            });
+                        } else {
+                            self.change_state(State::BoxSelect {
+                                start_grid_pos: grid_pos,
+                                cur_grid_pos: grid_pos,
+                                cells: Vec::new(),
+                            });
+                        }
                     }
                     input::MouseButton::Right => {
                         let action = Action::RemoveComponentAtPos(grid_coords);
@@ -375,6 +410,8 @@ impl Hud {
                     _ => {}
                 }
             }
+            State::Select { .. } => {} // TODO
+            State::BoxSelect { .. } => {}
         }
     }
 
@@ -397,7 +434,16 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::PlaceElement { .. } => {}
+            State::PlaceElement { .. } => {},
+            State::Select { .. } => {} // TODO
+            State::BoxSelect { 
+                start_grid_pos, 
+                cur_grid_pos,
+                cells: _
+            } => {
+                // TODO
+                self.change_state(State::Initial);
+            }
         }
     }
 
@@ -554,6 +600,15 @@ impl Hud {
                 *last_grid_coords = locked_coords;
             }
             State::PlaceElement { .. } => {}
+            State::Select { .. } => {}
+            State::BoxSelect { 
+                ref mut start_grid_pos,
+                ref mut cur_grid_pos,
+                ref mut cells
+            } => {
+                let grid_pos = screen_to_grid_pos(camera, self.mouse_x, self.mouse_y);
+                *cur_grid_pos = grid_pos;
+            }
         }
     }
 
@@ -592,6 +647,26 @@ impl Hud {
                     &component,
                     draw_mode,
                 )?;
+            }
+            State::BoxSelect {
+                start_grid_pos,
+                cur_grid_pos,
+                cells: _
+            } => {
+                let start_t = camera.transform(start_grid_pos * display::EDGE_LENGTH);
+                let cur_t = camera.transform(cur_grid_pos * display::EDGE_LENGTH);
+                let center_t = (start_t + cur_t) / 2.0;
+                let size_t = cur_t - start_t;
+
+                let r = graphics::Rect {
+                    x: center_t.x,
+                    y: center_t.y,
+                    w: size_t.x,
+                    h: size_t.y,
+                };
+
+                graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
             }
             _ => {}
         }
