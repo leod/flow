@@ -10,8 +10,7 @@ use graph::NeighborGraph;
 
 pub use types::Coords;
 pub use self::action::Action;
-pub use self::component::{SwitchType, ChipId, ChipDescr, 
-    ElementDescr, Element, Component};
+pub use self::component::{SwitchType, ChipId, ChipDescr, ElementDescr, Element, Component};
 pub use self::chip_db::{Chip, ChipDb};
 
 pub type ComponentId = usize;
@@ -22,8 +21,7 @@ pub type ComponentId = usize;
 pub type CellId = (ComponentId, usize);
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub struct Edge {
-}
+pub struct Edge {}
 
 pub type Point = ComponentId;
 
@@ -80,18 +78,20 @@ impl Circuit {
     // Component IDs are preserved. Only edges between the cells of
     // the given components are kept.
     pub fn subcircuit(&self, ids: &HashSet<ComponentId>) -> Circuit {
-        let components = self.components.iter()
+        let components = self.components
+            .iter()
             .filter(|&(id, _)| ids.contains(id))
             .map(|(&id, c)| (id, c.clone()))
             .collect::<HashMap<_, _>>();
-        let cell_ids = components.iter()
-            .flat_map(|(&id, c)|
-                       (0 .. c.cells.len())
-                           .map(|k| (id, k))
-                           .collect::<Vec<_>>())
+        let cell_ids = components
+            .iter()
+            .flat_map(|(&id, c)| {
+                (0..c.cells.len()).map(|k| (id, k)).collect::<Vec<_>>()
+            })
             .collect();
         let graph = self.graph.subgraph(&cell_ids);
-        let points = self.points.iter()
+        let points = self.points
+            .iter()
             .filter(|&(_pos, id)| ids.contains(id))
             .map(|(&pos, &id)| (pos, id))
             .collect();
@@ -101,28 +101,27 @@ impl Circuit {
             components,
             graph,
             points,
-            next_component_id
+            next_component_id,
         }
     }
 
     // Move components such that the smallest position is at the origin.
     pub fn shift_to_origin(&mut self) {
-        let min_pos = self.components.iter()
-            .fold(None,
-                  |p, (_id, c)|
-                       if let Some(Coords { x, y }) = p {
-                           Some(Coords::new(cmp::min(x, c.pos.x),
-                                            cmp::min(y, c.pos.y)))
-                       } else {
-                           Some(c.pos)
-                       });
+        let min_pos = self.components.iter().fold(None, |p, (_id, c)| {
+            if let Some(Coords { x, y }) = p {
+                Some(Coords::new(cmp::min(x, c.pos.x), cmp::min(y, c.pos.y)))
+            } else {
+                Some(c.pos)
+            }
+        });
 
         if let Some(min_pos) = min_pos {
             for c in self.components.values_mut() {
                 c.pos -= min_pos;
             }
 
-            self.points = self.points.iter()
+            self.points = self.points
+                .iter()
                 .map(|(&pos, &point)| (pos - min_pos, point))
                 .collect();
         }
@@ -146,14 +145,16 @@ impl Circuit {
         let mut contained_in = HashMap::new();
 
         loop {
-            let chip_component_ids = unfolded_circuit.components.iter().filter(
-                |&(c_id, component)|
-                    match &component.element {
-                        &Element::Chip(_chip_id, ref _descr) => true,
-                        _ => false
-                    } && !finished_ids.contains(c_id)
-                ).map(|(&c_id, _component)| c_id)
-                 .collect::<Vec<_>>();
+            let chip_component_ids = unfolded_circuit
+                .components
+                .iter()
+                .filter(|&(c_id, component)| match &component.element {
+                    &Element::Chip(_chip_id, ref _descr) => true,
+                    _ => false,
+                } &&
+                    !finished_ids.contains(c_id))
+                .map(|(&c_id, _component)| c_id)
+                .collect::<Vec<_>>();
 
             if chip_component_ids.len() == 0 {
                 break;
@@ -162,14 +163,17 @@ impl Circuit {
             for &chip_component_id in chip_component_ids.iter() {
                 finished_ids.insert(chip_component_id);
 
-                let chip_component = 
-                    unfolded_circuit.components.get(&chip_component_id).unwrap().clone();
+                let chip_component = unfolded_circuit
+                    .components
+                    .get(&chip_component_id)
+                    .unwrap()
+                    .clone();
                 let chip_element_descr = chip_component.element.descr();
 
                 if let Element::Chip(chip_id, _descr) = chip_component.element {
                     let chip = chip_db.get(&chip_id).unwrap();
 
-                    // Map from cell IDs inside chip circuit to cell IDs in 
+                    // Map from cell IDs inside chip circuit to cell IDs in
                     // unfolded circuit
                     let mut id_map = HashMap::new();
 
@@ -179,50 +183,74 @@ impl Circuit {
                             // to the outer circuit. Here, we can assume that the number
                             // of cell edges to the left is the same for the chip component
                             // as well as the left input inside the chip circuit.
-                            let left_cells = chip_element_descr.cells.iter().enumerate()
+                            let left_cells = chip_element_descr
+                                .cells
+                                .iter()
+                                .enumerate()
                                 .filter(|&(_i, &(dir, _k))| dir == Dir::Left)
                                 .map(|(i, _)| i);
-                                
+
                             for (inner_cell_index, cell_index) in left_cells.enumerate() {
-                                id_map.insert((c_id, inner_cell_index),
-                                              (chip_component_id, cell_index));
+                                id_map.insert(
+                                    (c_id, inner_cell_index),
+                                    (chip_component_id, cell_index),
+                                );
                             }
                         } else if c_id == chip.right_input_id {
-                            let right_cells = chip_element_descr.cells.iter().enumerate()
+                            let right_cells = chip_element_descr
+                                .cells
+                                .iter()
+                                .enumerate()
                                 .filter(|&(_i, &(dir, _k))| dir == Dir::Right)
                                 .map(|(i, _)| i);
-                                
+
                             for (inner_cell_index, cell_index) in right_cells.enumerate() {
-                                id_map.insert((c_id, inner_cell_index),
-                                              (chip_component_id, cell_index));
+                                id_map.insert(
+                                    (c_id, inner_cell_index),
+                                    (chip_component_id, cell_index),
+                                );
                             }
                         } else {
-                            // Add components of inner chip 
+                            // Add components of inner chip
                             let new_id = unfolded_circuit.next_component_id;
                             unfolded_circuit.next_component_id += 1;
 
-                            for cell_index in 0 .. component.cells.len() {
+                            for cell_index in 0..component.cells.len() {
                                 let node = chip.circuit.graph.get_node((c_id, cell_index)).unwrap();
                                 unfolded_circuit.graph.add_node((new_id, cell_index), *node);
                                 id_map.insert((c_id, cell_index), (new_id, cell_index));
                             }
-                            
-                            unfolded_circuit.components.insert(new_id, component.clone());
+
+                            unfolded_circuit.components.insert(
+                                new_id,
+                                component.clone(),
+                            );
 
                             // If we just inserted a chip component, keep track of the origin,
                             // to check for cycles
-                            if let &Element::Chip(inner_chip_id, ref _chip_descr) = &component.element {
+                            if let &Element::Chip(inner_chip_id, ref _chip_descr) =
+                                &component.element
+                            {
                                 if contained_in.get(&inner_chip_id).is_none() {
-                                    contained_in.insert(inner_chip_id, HashSet::new()); 
+                                    contained_in.insert(inner_chip_id, HashSet::new());
                                 }
-                                contained_in.get_mut(&inner_chip_id).unwrap().insert(chip_id);
+                                contained_in.get_mut(&inner_chip_id).unwrap().insert(
+                                    chip_id,
+                                );
 
                                 // Take a transitive closure of the contained_in relation
                                 if contained_in.get(&chip_id).is_none() {
                                     contained_in.insert(chip_id, HashSet::new());
                                 }
-                                for &outer_chip_id in contained_in.get(&chip_id).unwrap().clone().iter() {
-                                    contained_in.get_mut(&inner_chip_id).unwrap().insert(outer_chip_id);
+                                for &outer_chip_id in contained_in
+                                    .get(&chip_id)
+                                    .unwrap()
+                                    .clone()
+                                    .iter()
+                                {
+                                    contained_in.get_mut(&inner_chip_id).unwrap().insert(
+                                        outer_chip_id,
+                                    );
                                     if outer_chip_id == inner_chip_id {
                                         // Cycle
                                         return None;
@@ -233,11 +261,17 @@ impl Circuit {
                     }
 
                     // Insert new edges for the unfolded circuit
-                    for (&(ref cell_id_a, ref cell_id_b), &edge) in chip.circuit.graph.edges().iter() {
+                    for (&(ref cell_id_a, ref cell_id_b), &edge) in
+                        chip.circuit.graph.edges().iter()
+                    {
                         let new_cell_id_a = *id_map.get(cell_id_a).unwrap();
                         let new_cell_id_b = *id_map.get(cell_id_b).unwrap();
 
-                        unfolded_circuit.graph.add_edge(new_cell_id_a, new_cell_id_b, edge);
+                        unfolded_circuit.graph.add_edge(
+                            new_cell_id_a,
+                            new_cell_id_b,
+                            edge,
+                        );
                     }
                 } else {
                     panic!("component should be a Chip");

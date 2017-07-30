@@ -19,7 +19,7 @@ impl<K: Eq + Hash + Copy + Canonize, V> CanonMap<K, V> {
     pub fn set(&mut self, k: K, v: V) {
         self.0.insert(k.canonize(), v);
     }
-    
+
     pub fn get(&self, k: K) -> Option<&V> {
         self.0.get(&k.canonize())
     }
@@ -34,7 +34,7 @@ impl<K: Eq + Hash + Copy + Canonize, V> CanonMap<K, V> {
 }
 
 impl<K: Eq + Hash + Copy + Canonize, V> FromIterator<(K, V)> for CanonMap<K, V> {
-    fn from_iter<I: IntoIterator<Item=(K, V)>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
         let mut m = CanonMap::new();
 
         for (k, v) in iter {

@@ -8,28 +8,31 @@ use canon_map::{Canonize, CanonMap};
 // struct is designed for reasonably fast lookup and mutation.
 pub struct Graph<NodeId: Copy + Eq + Ord + Hash, Node, Edge> {
     pub nodes: HashMap<NodeId, Node>,
-    pub edges: CanonMap<(NodeId, NodeId), Edge>
+    pub edges: CanonMap<(NodeId, NodeId), Edge>,
 }
 
 // A graph in which each node additionally stores the NodeIds of its neighbors
-pub type NeighborGraph<NodeId, Node, Edge> =
-    Graph<NodeId, (Node, Vec<NodeId>), Edge>;
+pub type NeighborGraph<NodeId, Node, Edge> = Graph<NodeId, (Node, Vec<NodeId>), Edge>;
 
 // Implement the redundant information in a NeighborGraph, so that the neighbor
 // lists are always up to date
 impl<NodeId, Node, Edge> NeighborGraph<NodeId, Node, Edge>
-where NodeId: Copy + Eq + Ord + Hash, Node: Clone, Edge: Clone {
+where
+    NodeId: Copy + Eq + Ord + Hash,
+    Node: Clone,
+    Edge: Clone,
+{
     pub fn new() -> Self {
         Graph {
             nodes: HashMap::new(),
-            edges: CanonMap::new()
+            edges: CanonMap::new(),
         }
     }
-    
+
     pub fn nodes(&self) -> &HashMap<NodeId, (Node, Vec<NodeId>)> {
         &self.nodes
     }
-    
+
     pub fn edges(&self) -> &CanonMap<(NodeId, NodeId), Edge> {
         &self.edges
     }
@@ -55,16 +58,14 @@ where NodeId: Copy + Eq + Ord + Hash, Node: Clone, Edge: Clone {
                     self.edges.remove((id, neighbor));
 
                     // Remove node from neighbors of the neighbor
-                    let ref mut other_neighbors =
-                        self.nodes.get_mut(&neighbor).unwrap().1;
-                    let index = other_neighbors.iter()
-                        .position(|&c| c == id).unwrap();
+                    let ref mut other_neighbors = self.nodes.get_mut(&neighbor).unwrap().1;
+                    let index = other_neighbors.iter().position(|&c| c == id).unwrap();
                     other_neighbors.remove(index);
                 }
 
                 (node, neighbors)
             }
-            None => panic!("invalid NodeId")
+            None => panic!("invalid NodeId"),
         }
     }
 
@@ -106,19 +107,23 @@ where NodeId: Copy + Eq + Ord + Hash, Node: Clone, Edge: Clone {
     }
 
     pub fn subgraph(&self, node_ids: &HashSet<NodeId>) -> NeighborGraph<NodeId, Node, Edge> {
-        let nodes = self.nodes.iter()
+        let nodes = self.nodes
+            .iter()
             .filter(|&(id, _node)| node_ids.contains(id))
             .map(|(&id, &(ref node, ref neighbors))| {
-                     let neighbors = neighbors.iter()
-                         .filter(|&n_id| node_ids.contains(n_id))
-                         .map(|&n_id| n_id)
-                         .collect();
-                     (id, (node.clone(), neighbors))
-                 })
+                let neighbors = neighbors
+                    .iter()
+                    .filter(|&n_id| node_ids.contains(n_id))
+                    .map(|&n_id| n_id)
+                    .collect();
+                (id, (node.clone(), neighbors))
+            })
             .collect();
-        let edges = self.edges.iter()
-            .filter(|&(&(ref a_id, ref b_id), _edge)|
-                    node_ids.contains(a_id) && node_ids.contains(b_id))
+        let edges = self.edges
+            .iter()
+            .filter(|&(&(ref a_id, ref b_id), _edge)| {
+                node_ids.contains(a_id) && node_ids.contains(b_id)
+            })
             .map(|(&nodes, edge)| (nodes, edge.clone()))
             .collect();
         NeighborGraph { nodes, edges }
@@ -126,16 +131,23 @@ where NodeId: Copy + Eq + Ord + Hash, Node: Clone, Edge: Clone {
 }
 
 impl<NodeId, Node, Edge> Clone for Graph<NodeId, Node, Edge>
-where NodeId: Clone + Copy + Eq + Ord + Hash, Node: Clone, Edge: Clone {
+where
+    NodeId: Clone + Copy + Eq + Ord + Hash,
+    Node: Clone,
+    Edge: Clone,
+{
     fn clone(&self) -> Self {
         Graph {
             nodes: self.nodes.clone(),
-            edges: self.edges.clone()
+            edges: self.edges.clone(),
         }
     }
 }
 
-impl<T> Canonize for (T, T) where T: Copy + Ord + Eq + Hash {
+impl<T> Canonize for (T, T)
+where
+    T: Copy + Ord + Eq + Hash,
+{
     type Canon = (T, T);
 
     fn canonize(&self) -> (T, T) {
