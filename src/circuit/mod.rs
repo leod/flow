@@ -3,6 +3,7 @@ mod component;
 mod chip_db;
 
 use std::collections::{HashMap, HashSet};
+use std::cmp;
 
 use types::Dir;
 use graph::NeighborGraph;
@@ -101,6 +102,29 @@ impl Circuit {
             graph,
             points,
             next_component_id
+        }
+    }
+
+    // Move components such that the smallest position is at the origin.
+    pub fn shift_to_origin(&mut self) {
+        let min_pos = self.components.iter()
+            .fold(None,
+                  |p, (_id, c)|
+                       if let Some(Coords { x, y }) = p {
+                           Some(Coords::new(cmp::min(x, c.pos.x),
+                                            cmp::min(y, c.pos.y)))
+                       } else {
+                           Some(c.pos)
+                       });
+
+        if let Some(min_pos) = min_pos {
+            for c in self.components.values_mut() {
+                c.pos -= min_pos;
+            }
+
+            self.points = self.points.iter()
+                .map(|(&pos, &point)| (pos - min_pos, point))
+                .collect();
         }
     }
 
