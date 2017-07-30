@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 use canon_map::{Canonize, CanonMap};
@@ -18,7 +18,7 @@ pub type NeighborGraph<NodeId, Node, Edge> =
 // Implement the redundant information in a NeighborGraph, so that the neighbor
 // lists are always up to date
 impl<NodeId, Node, Edge> NeighborGraph<NodeId, Node, Edge>
-where NodeId: Copy + Eq + Ord + Hash {
+where NodeId: Copy + Eq + Ord + Hash, Node: Clone, Edge: Clone {
     pub fn new() -> Self {
         Graph {
             nodes: HashMap::new(),
@@ -103,6 +103,25 @@ where NodeId: Copy + Eq + Ord + Hash {
         assert!(self.edges.get((a, b)).is_some());
 
         self.edges.remove((a, b)).unwrap()
+    }
+
+    pub fn subgraph(&self, node_ids: &HashSet<NodeId>) -> NeighborGraph<NodeId, Node, Edge> {
+        let nodes = self.nodes.iter()
+            .filter(|&(id, _node)| node_ids.contains(id))
+            .map(|(&id, &(ref node, ref neighbors))| {
+                     let neighbors = neighbors.iter()
+                         .filter(|&n_id| node_ids.contains(n_id))
+                         .map(|&n_id| n_id)
+                         .collect();
+                     (id, (node.clone(), neighbors))
+                 })
+            .collect();
+        let edges = self.edges.iter()
+            .filter(|&(&(ref a_id, ref b_id), _edge)|
+                    node_ids.contains(a_id) && node_ids.contains(b_id))
+            .map(|(&nodes, edge)| (nodes, edge.clone()))
+            .collect();
+        NeighborGraph { nodes, edges }
     }
 }
 
