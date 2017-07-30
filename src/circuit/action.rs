@@ -21,22 +21,22 @@ impl Action {
             &Action::NoUndo(ref action) => action.can_perform(circuit),
             &Action::PlaceComponent(ref component) => {
                 // Check that the grid points are empty
-                let points_empty = component.rect
-                    .iter()
-                    .all(|p| !circuit.points.contains_key(&p));
+                let points_empty = component.rect.iter().all(|p| {
+                    !circuit.points.contains_key(&p)
+                });
 
                 points_empty
             }
             &Action::RemoveComponentAtPos(pos) => {
                 let point = circuit.points.get(&pos);
-                
+
                 if let Some(component_id) = point {
-                    let element = &circuit.components
-                        .get(&component_id).unwrap().element;
+                    let element =
+                        &circuit.components.get(&component_id).unwrap().element;
                     match element {
                         &Element::Input { .. } => false,
                         &Element::Output { .. } => false,
-                        _ => true
+                        _ => true,
                     }
                 } else {
                     false
@@ -52,43 +52,50 @@ impl Action {
                         let c_a = circuit.components.get(&id_a).unwrap();
                         let c_b = circuit.components.get(&id_b).unwrap();
                         let cell_a = c_a.get_edge_cell_index(pos, dir);
-                        let cell_b = c_b.get_edge_cell_index(pos_b, dir.invert());
-                        
+                        let cell_b =
+                            c_b.get_edge_cell_index(pos_b, dir.invert());
+
                         match (cell_a, cell_b) {
                             (Some(cell_a), Some(cell_b)) => {
-                                circuit.graph.get_edge((id_a, cell_a),
-                                                       (id_b, cell_b)).is_none()
-                                != edge.is_none()
+                                circuit
+                                    .graph
+                                    .get_edge((id_a, cell_a), (id_b, cell_b))
+                                    .is_none() !=
+                                    edge.is_none()
                             }
-                            _ => false
+                            _ => false,
                         }
                     }
-                    _ => false
+                    _ => false,
                 }
             }
             &Action::PlaceEdge((id_a, cell_a), (id_b, cell_b), _edge) => {
                 let c_a = circuit.components.get(&id_a);
                 let c_b = circuit.components.get(&id_b);
-                
+
                 match (c_a, c_b) {
                     (Some(_), Some(_)) => {
                         // TODO: Check that edge is contained in cell_edges
-                        circuit.graph.get_edge((id_a, cell_a),
-                                               (id_b, cell_b)).is_none()
+                        circuit
+                            .graph
+                            .get_edge((id_a, cell_a), (id_b, cell_b))
+                            .is_none()
                     }
-                    _ => false
+                    _ => false,
                 }
             }
             &Action::RemoveEdge((id_a, cell_a), (id_b, cell_b)) => {
                 let c_a = circuit.components.get(&id_a);
                 let c_b = circuit.components.get(&id_b);
-                
+
                 match (c_a, c_b) {
                     (Some(_), Some(_)) => {
-                        circuit.graph.get_edge((id_a, cell_a),
-                                               (id_b, cell_b)).is_some()
+                        circuit
+                            .graph
+                            .get_edge((id_a, cell_a), (id_b, cell_b))
+                            .is_some()
                     }
-                    _ => false
+                    _ => false,
                 }
             }
             &Action::ReverseCompound(_) => {
@@ -134,10 +141,10 @@ impl Action {
             Action::RemoveComponentAtPos(pos) => {
                 let component_id = *circuit.points.get(&pos).unwrap();
 
-                let component = circuit.components
-                    .get(&component_id).unwrap().clone();
+                let component =
+                    circuit.components.get(&component_id).unwrap().clone();
 
-                circuit.components.remove(&component_id); 
+                circuit.components.remove(&component_id);
 
                 for c in component.rect.iter() {
                     circuit.points.remove(&c);
@@ -151,17 +158,23 @@ impl Action {
                     let cell_id = (component_id, cell_index);
 
                     // Create undo action for the edges attached to this cell
-                    let neighbor_ids = circuit.graph.get_neighbors(cell_id)
-                        .unwrap().clone();
+                    let neighbor_ids =
+                        circuit.graph.get_neighbors(cell_id).unwrap().clone();
                     for &neighbor_id in neighbor_ids.iter() {
                         let neighbor_pos =
                             *circuit.graph.get_node(neighbor_id).unwrap();
                         let dir = Dir::from_coords(cell_pos, neighbor_pos);
-                        let edge =
-                            circuit.graph.get_edge(cell_id, neighbor_id).unwrap();
+                        let edge = circuit
+                            .graph
+                            .get_edge(cell_id, neighbor_id)
+                            .unwrap();
 
-                        let action = Action::NoUndo(Box::new(
-                            Action::PlaceEdgeAtPos(cell_pos, dir, Some(edge.clone()))));
+                        let action =
+                            Action::NoUndo(Box::new(Action::PlaceEdgeAtPos(
+                                cell_pos,
+                                dir,
+                                Some(edge.clone()),
+                            )));
                         undo.push(action);
                     }
 
@@ -179,13 +192,15 @@ impl Action {
                 let (cell_a, cell_b) = {
                     let c_a = circuit.components.get(&id_a).unwrap();
                     let c_b = circuit.components.get(&id_b).unwrap();
-                    
-                    (c_a.get_edge_cell_index(pos, dir).unwrap(),
-                     c_b.get_edge_cell_index(pos_b, dir.invert()).unwrap())
+
+                    (
+                        c_a.get_edge_cell_index(pos, dir).unwrap(),
+                        c_b.get_edge_cell_index(pos_b, dir.invert()).unwrap(),
+                    )
                 };
                 let node_a = (id_a, cell_a);
                 let node_b = (id_b, cell_b);
-                
+
                 match edge {
                     Some(edge) => {
                         circuit.graph.add_edge(node_a, node_b, edge);
@@ -198,21 +213,21 @@ impl Action {
                 }
             }
             Action::PlaceEdge((id_a, cell_a), (id_b, cell_b), edge) => {
-                circuit.graph.add_edge((id_a, cell_a),
-                                       (id_b, cell_b),
-                                       edge);
+                circuit.graph.add_edge((id_a, cell_a), (id_b, cell_b), edge);
                 Action::RemoveEdge((id_a, cell_a), (id_b, cell_b))
             }
             Action::RemoveEdge((id_a, cell_a), (id_b, cell_b)) => {
-                let edge = circuit.graph.remove_edge((id_a, cell_a),
-                                                     (id_b, cell_b));
+                let edge =
+                    circuit.graph.remove_edge((id_a, cell_a), (id_b, cell_b));
                 Action::PlaceEdge((id_a, cell_a), (id_b, cell_b), edge)
             }
             Action::ReverseCompound(actions) => {
-                let undo = actions.into_iter().rev()
-                                  .map(|action| { action.perform(circuit) })
-                                  .collect::<Vec<_>>();
-                Action::ReverseCompound(undo) 
+                let undo = actions
+                    .into_iter()
+                    .rev()
+                    .map(|action| action.perform(circuit))
+                    .collect::<Vec<_>>();
+                Action::ReverseCompound(undo)
             }
         }
     }

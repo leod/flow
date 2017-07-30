@@ -38,26 +38,34 @@ impl CameraInput {
                 if y > 0 && camera.zoom < self.max_zoom {
                     camera.zoom += self.zoom_speed * y as f32;
                     if camera.zoom > self.max_zoom {
-                       camera.zoom = self.max_zoom;
+                        camera.zoom = self.max_zoom;
                     }
                 };
             }
-            &Input::KeyDown { keycode, keymod: _, repeat: _ } => {
+            &Input::KeyDown {
+                keycode,
+                keymod: _,
+                repeat: _,
+            } => {
                 match keycode {
                     Keycode::Left | Keycode::A => self.delta.x = -1.0,
                     Keycode::Right | Keycode::D => self.delta.x = 1.0,
                     Keycode::Up | Keycode::W => self.delta.y = -1.0,
                     Keycode::Down | Keycode::S => self.delta.y = 1.0,
-                    _ => ()
+                    _ => (),
                 }
             }
-            &Input::KeyUp { keycode, keymod: _, repeat: _ } => {
+            &Input::KeyUp {
+                keycode,
+                keymod: _,
+                repeat: _,
+            } => {
                 match keycode {
                     Keycode::Left | Keycode::A => self.delta.x = 0.0,
                     Keycode::Right | Keycode::D => self.delta.x = 0.0,
                     Keycode::Up | Keycode::W => self.delta.y = 0.0,
                     Keycode::Down | Keycode::S => self.delta.y = 0.0,
-                    _ => ()
+                    _ => (),
                 }
             }
             _ => {}
