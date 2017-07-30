@@ -1,4 +1,5 @@
 use std::cmp;
+use std::collections::HashSet;
 use std::iter::{once, Iterator};
 
 use cgmath::Vector2;
@@ -7,14 +8,14 @@ use ggez::{GameResult, Context};
 use ggez::graphics::{self, Drawable};
 use sdl2::keyboard;
 
-use types::{Dir, Axis};
+use types::{Dir, Rect, Axis};
 use input::{self, Input};
 use camera::Camera;
-use circuit::{self, ChipId, ChipDb, CellId, Circuit, Action, SwitchType,
-              Element};
+use circuit::{self, ChipId, ChipDb, Circuit, Action, SwitchType,
+              ComponentId, Element};
 use display::{self, Display};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(Clone)]
 enum State {
     Initial,
     Draw {
@@ -26,12 +27,13 @@ enum State {
         element: Element,
         rotation_cw: usize,
     },
-    Select { cells: Vec<CellId> },
+    Select { components: HashSet<ComponentId> },
     BoxSelect {
         start_grid_pos: Vector2<f32>,
         cur_grid_pos: Vector2<f32>,
-        cells: Vec<CellId>,
+        prev_components: HashSet<ComponentId>,
     },
+    Paste,
 }
 
 pub struct Hud {
@@ -42,6 +44,8 @@ pub struct Hud {
     state: State,
     undo: Vec<(Option<ChipId>, Action)>,
     redo: Vec<(Option<ChipId>, Action)>,
+
+    clipboard: Option<Circuit>,
 
     mouse_x: i32,
     mouse_y: i32,
@@ -79,6 +83,7 @@ impl Hud {
             state: State::Initial,
             undo: Vec::new(),
             redo: Vec::new(),
+            clipboard: None,
             mouse_x: ctx.conf.window_width as i32 / 2,
             mouse_y: ctx.conf.window_height as i32 / 2,
             hold_control: false,
@@ -185,6 +190,7 @@ impl Hud {
             State::PlaceElement { .. } => None,
             State::Select { .. } => None,
             State::BoxSelect { .. } => None,
+            State::Paste => None,
         };
 
         if let Some(u) = undo_action {
@@ -371,7 +377,7 @@ impl Hud {
                             self.change_state(State::BoxSelect {
                                 start_grid_pos: grid_pos,
                                 cur_grid_pos: grid_pos,
-                                cells: Vec::new(),
+                                prev_components: HashSet::new(),
                             });
                         }
                     }
@@ -412,19 +418,34 @@ impl Hud {
             }
             State::Select { .. } => {} // TODO
             State::BoxSelect { .. } => {}
+            State::Paste => {
+                // Paste mode can only be entered when we have a clipboard entry.
+                // During Paste mode, the clipboard can not be changed.
+                // TODO: Might be able to remove the need to clone here
+                let clipboard = self.clipboard.clone().unwrap();
+
+                let action = Action::PlaceCircuitAtPos(clipboard, grid_coords);
+                self.try_perform_action(cur_circuit, action);
+            }
         }
     }
 
     fn mouse_button_up_event(
         &mut self,
-        _circuit: &mut Circuit,
-        _chip_db: &mut ChipDb,
+        circuit: &mut Circuit,
+        chip_db: &mut ChipDb,
         _camera: &Camera,
         button: input::MouseButton,
         _x: i32,
         _y: i32,
     ) {
-        match self.state {
+        let cur_circuit = self.circuit_mut(
+            &self.cur_chip_id,
+            circuit,
+            chip_db,
+        );
+
+        match self.state.clone() {
             State::Initial => {}
             State::Draw { .. } => {
                 match button {
@@ -439,11 +460,27 @@ impl Hud {
             State::BoxSelect { 
                 start_grid_pos, 
                 cur_grid_pos,
-                cells: _
+                prev_components
             } => {
-                // TODO
-                self.change_state(State::Initial);
+                let start_p = grid_pos_to_coords(start_grid_pos);
+                let end_p = grid_pos_to_coords(cur_grid_pos);
+                let rect = Rect::from_coords(start_p, end_p);
+
+                let rect_components = cur_circuit.components_in_rect(rect);
+                let mut new_components = prev_components.clone();
+                new_components.extend(rect_components.iter());
+
+                let state = if new_components.len() > 0 {
+                    State::Select {
+                        components: new_components
+                    }
+                } else {
+                    State::Initial
+                };
+
+                self.change_state(state);
             }
+            State::Paste => {}
         }
     }
 
@@ -454,42 +491,65 @@ impl Hud {
         _camera: &Camera,
         keycode: input::Keycode,
     ) {
-        match self.state {
+        match self.state.clone() {
             State::Initial |
             State::PlaceElement { .. } => {
                 match keycode {
-                    input::Keycode::Z => {
-                        if self.hold_control == true {
-                            if let Some((chip_id, undo_action)) =
-                                self.undo.pop()
-                            {
-                                let action_circuit = self.circuit_mut(
-                                    &chip_id,
-                                    circuit,
-                                    chip_db,
-                                );
-                                let redo_action =
-                                    undo_action.perform(action_circuit);
-                                self.redo.push((chip_id.clone(), redo_action));
-                                self.switch_chip(&chip_id);
-                            }
+                    input::Keycode::Z if self.hold_control => {
+                        if let Some((chip_id, undo_action)) =
+                            self.undo.pop()
+                        {
+                            let action_circuit = self.circuit_mut(
+                                &chip_id,
+                                circuit,
+                                chip_db,
+                            );
+                            let redo_action =
+                                undo_action.perform(action_circuit);
+                            self.redo.push((chip_id.clone(), redo_action));
+                            self.switch_chip(&chip_id);
                         }
                     }
-                    input::Keycode::Y => {
-                        if self.hold_control == true {
-                            if let Some((chip_id, redo_action)) =
-                                self.redo.pop()
-                            {
-                                let action_circuit = self.circuit_mut(
-                                    &chip_id,
-                                    circuit,
-                                    chip_db,
-                                );
-                                let undo_action =
-                                    redo_action.perform(action_circuit);
-                                self.undo.push((chip_id.clone(), undo_action));
-                                self.switch_chip(&chip_id);
-                            }
+                    input::Keycode::Y if self.hold_control => {
+                        if let Some((chip_id, redo_action)) =
+                            self.redo.pop()
+                        {
+                            let action_circuit = self.circuit_mut(
+                                &chip_id,
+                                circuit,
+                                chip_db,
+                            );
+                            let undo_action =
+                                redo_action.perform(action_circuit);
+                            self.undo.push((chip_id.clone(), undo_action));
+                            self.switch_chip(&chip_id);
+                        }
+                    }
+                    input::Keycode::V if self.hold_control => {
+                        if self.clipboard.is_some() {
+                            self.change_state(State::Paste);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            State::Select { components } => {
+                match keycode {
+                    input::Keycode::C if self.hold_control => {
+                        if components.len() > 0 {
+                            let cur_circuit = self.circuit_mut(
+                                &self.cur_chip_id,
+                                circuit,
+                                chip_db,
+                            );
+                            let mut selection = cur_circuit.subcircuit(&components);
+                            selection.shift_to_origin();
+                            self.clipboard = Some(selection);
+                        }
+                    }
+                    input::Keycode::V if self.hold_control => {
+                        if self.clipboard.is_some() {
+                            self.change_state(State::Paste);
                         }
                     }
                     _ => {}
@@ -602,12 +662,14 @@ impl Hud {
             State::PlaceElement { .. } => {}
             State::Select { .. } => {}
             State::BoxSelect { 
-                ref mut start_grid_pos,
                 ref mut cur_grid_pos,
-                ref mut cells
+                ..
             } => {
                 let grid_pos = screen_to_grid_pos(camera, self.mouse_x, self.mouse_y);
                 *cur_grid_pos = grid_pos;
+            }
+            State::Paste => {
+
             }
         }
     }
@@ -651,7 +713,7 @@ impl Hud {
             State::BoxSelect {
                 start_grid_pos,
                 cur_grid_pos,
-                cells: _
+                prev_components: _
             } => {
                 let start_t = camera.transform(start_grid_pos * display::EDGE_LENGTH);
                 let cur_t = camera.transform(cur_grid_pos * display::EDGE_LENGTH);
@@ -667,6 +729,33 @@ impl Hud {
 
                 graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
                 graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+            }
+            State::Select {
+                components
+            } => {
+                graphics::set_color(
+                    ctx,
+                    graphics::Color::new(0.0, 1.0, 0.0, 1.0),
+                )?;
+                for id in components.iter() {
+                    let c = cur_circuit.components().get(id).unwrap();
+                    let p_t = camera.transform(c.pos.cast() * display::EDGE_LENGTH);
+                    let size = (c.size().cast() + Vector2::new(0.8, 0.8)) *
+                        display::EDGE_LENGTH;
+                    let trans_size = camera.transform_delta(size);
+                    let shift = c.size().cast() * display::HALF_EDGE_LENGTH;
+                    let trans_shift = camera.transform_delta(shift);
+                    let center = p_t + trans_shift;
+
+                    let r = graphics::Rect {
+                        x: center.x,
+                        y: center.y,
+                        w: trans_size.x,
+                        h: trans_size.y,
+                    };
+
+                    graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+                }
             }
             _ => {}
         }

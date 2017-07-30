@@ -5,7 +5,7 @@ mod chip_db;
 use std::collections::{HashMap, HashSet};
 use std::cmp;
 
-use types::Dir;
+use types::{Dir, Rect};
 use graph::NeighborGraph;
 
 pub use types::Coords;
@@ -126,6 +126,14 @@ impl Circuit {
                 .map(|(&pos, &point)| (pos - min_pos, point))
                 .collect();
         }
+    }
+
+    pub fn components_in_rect(&self, rect: Rect) -> HashSet<ComponentId> {
+        rect.iter()
+            .map(|p| self.points.get(&p))
+            .filter(|p| p.is_some())
+            .map(|p| *p.unwrap())
+            .collect()
     }
 
     // Unfold this circuit by recursively instantiating chips.

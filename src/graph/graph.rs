@@ -61,7 +61,7 @@ where
                 for &neighbor in neighbors.iter() {
                     self.edges.remove((id, neighbor));
 
-// Remove node from neighbors of the neighbor
+                    // Remove node from neighbors of the neighbor
                     let ref mut other_neighbors = self.nodes.get_mut(&neighbor).unwrap().1;
                     let index = other_neighbors.iter().position(|&c| c == id).unwrap();
                     other_neighbors.remove(index);

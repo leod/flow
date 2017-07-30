@@ -2,7 +2,7 @@ use types::Dir;
 
 use super::{Coords, CellId, Element, Component, Edge, Circuit};
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(Clone)]
 pub enum Action {
     None,
     NoUndo(Box<Action>),
@@ -11,6 +11,7 @@ pub enum Action {
     PlaceEdgeAtPos(Coords, Dir, Option<Edge>),
     PlaceEdge(CellId, CellId, Edge),
     RemoveEdge(CellId, CellId),
+    PlaceCircuitAtPos(Circuit, Coords),
     ReverseCompound(Vec<Action>),
 }
 
@@ -97,6 +98,10 @@ impl Action {
                     }
                     _ => false,
                 }
+            }
+            &Action::PlaceCircuitAtPos(ref place_circuit, at_pos) => {
+                place_circuit.points.keys()
+                    .all(|&p| !circuit.points.get(&(p + at_pos)).is_some())
             }
             &Action::ReverseCompound(_) => {
                 // ReverseCompound not included here
@@ -220,6 +225,18 @@ impl Action {
                 let edge =
                     circuit.graph.remove_edge((id_a, cell_a), (id_b, cell_b));
                 Action::PlaceEdge((id_a, cell_a), (id_b, cell_b), edge)
+            }
+            Action::PlaceCircuitAtPos(place_circuit, at_pos) => {
+                let undo = place_circuit.components
+                    .iter()
+                    .map(|(&_component_id, place_component)| {
+                        let mut new_component = place_component.clone();
+                        new_component.pos += at_pos;
+                        new_component.rect.pos += at_pos;
+                        Action::PlaceComponent(new_component).perform(circuit)
+                    })
+                    .collect();
+                Action::ReverseCompound(undo)
             }
             Action::ReverseCompound(actions) => {
                 let undo = actions
