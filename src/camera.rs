@@ -5,7 +5,7 @@ pub struct Camera {
     window_width: u32,
     window_height: u32,
     pub position: Vector2<f32>,
-    pub zoom: f32
+    pub zoom: f32,
 }
 
 impl Camera {
@@ -14,21 +14,21 @@ impl Camera {
             window_width: window_width,
             window_height: window_height,
             position: Vector2::new(0.0, 0.0),
-            zoom: zoom
+            zoom: zoom,
         }
     }
 
     pub fn transform(&self, p: Vector2<f32>) -> Vector2<f32> {
-        let shift = 0.5 * Vector2::new(self.window_width as f32,
-                                       self.window_height as f32);
+        let shift = 0.5 *
+            Vector2::new(self.window_width as f32, self.window_height as f32);
 
         let p_t = (p - self.position) * self.zoom + shift;
         p_t
     }
 
     pub fn untransform(&self, p_t: Vector2<f32>) -> Vector2<f32> {
-        let shift = 0.5 * Vector2::new(self.window_width as f32,
-                                       self.window_height as f32);
+        let shift = 0.5 *
+            Vector2::new(self.window_width as f32, self.window_height as f32);
 
         let p = (p_t - shift) / self.zoom + self.position;
         p
@@ -39,7 +39,6 @@ impl Camera {
     }
 
     pub fn transform_delta(&self, r: Vector2<f32>) -> Vector2<f32> {
-        Vector2::new(self.transform_distance(r.x),
-                     self.transform_distance(r.y))
+        Vector2::new(self.transform_distance(r.x), self.transform_distance(r.y))
     }
 }

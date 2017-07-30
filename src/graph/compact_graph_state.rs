@@ -7,9 +7,9 @@ use super::compact_graph::{NodeIndex, EdgeIndex};
 pub struct CompactGraphState<NodeState, EdgeState> {
     // Node state, indexed by NodeIndex
     nodes: Vec<NodeState>,
-    
+
     // Edge state, indexed by EdgeIndex
-    edges: Vec<EdgeState>
+    edges: Vec<EdgeState>,
 }
 
 impl<NodeState, EdgeState> CompactGraphState<NodeState, EdgeState> {
@@ -18,24 +18,28 @@ impl<NodeState, EdgeState> CompactGraphState<NodeState, EdgeState> {
     pub fn new<NodeId, Node, Edge, FNode, FEdge>(
         graph: &NeighborGraph<NodeId, Node, Edge>,
         mut f_n: FNode,
-        mut f_e: FEdge
+        mut f_e: FEdge,
     ) -> Self
-    where NodeId: Copy + Eq + Ord + Hash,
-          FNode: FnMut(NodeId, &Node) -> NodeState,
-          FEdge: FnMut(NodeId, NodeId, &Edge) -> EdgeState {
-        let nodes = graph.nodes.iter().map(
-            |(&id_a, &(ref node, ref _neighbors))| {
-                f_n(id_a, node)
-            }).collect();
-        
-        let edges = graph.edges.iter().map(
-            |(&(id_a, id_b), edge)|
-                f_e(id_a, id_b, edge) 
-            ).collect();
+    where
+        NodeId: Copy + Eq + Ord + Hash,
+        FNode: FnMut(NodeId, &Node) -> NodeState,
+        FEdge: FnMut(NodeId, NodeId, &Edge) -> EdgeState,
+    {
+        let nodes = graph
+            .nodes
+            .iter()
+            .map(|(&id_a, &(ref node, ref _neighbors))| f_n(id_a, node))
+            .collect();
+
+        let edges = graph
+            .edges
+            .iter()
+            .map(|(&(id_a, id_b), edge)| f_e(id_a, id_b, edge))
+            .collect();
 
         CompactGraphState {
             nodes: nodes,
-            edges: edges
+            edges: edges,
         }
     }
 

@@ -8,13 +8,13 @@ pub struct Level {
     pub input_pos: circuit::Coords,
     pub output_size: usize,
     pub output_pos: circuit::Coords,
-    pub create_impl: Box<Fn() -> Box<LevelImpl>>
+    pub create_impl: Box<Fn() -> Box<LevelImpl>>,
 }
 
 #[derive(Debug)]
 pub enum Outcome {
     Success,
-    Failure
+    Failure,
 }
 
 pub trait LevelImpl {
@@ -29,7 +29,7 @@ pub struct LevelState {
 impl Level {
     pub fn new_circuit(&self) -> Circuit {
         let mut circuit = Circuit::new();
-        
+
         {
             let element = Element::Input { size: self.input_size };
             let component = element.new_component(self.input_pos, 0);
@@ -42,7 +42,7 @@ impl Level {
             let action = Action::PlaceComponent(component);
             action.perform(&mut circuit);
         }
-        
+
         circuit
     }
 }
@@ -51,7 +51,7 @@ impl Level {
     pub fn new_state(&self, circuit: &Circuit) -> LevelState {
         LevelState {
             flow: flow::State::from_circuit(circuit),
-            level_impl: self.create_impl.deref()()
+            level_impl: self.create_impl.deref()(),
         }
     }
 }
