@@ -277,31 +277,31 @@ impl Hud {
                     }
                     input::Keycode::Num2 => {
                         self.change_state(State::PlaceElement {
-                            element: Element::Source,
+                            element: Element::Switch(SwitchType::On),
                             rotation_cw: 0,
                         });
                     }
                     input::Keycode::Num3 => {
                         self.change_state(State::PlaceElement {
-                            element: Element::Sink,
+                            element: Element::Switch(SwitchType::Off),
                             rotation_cw: 0,
                         });
                     }
                     input::Keycode::Num4 => {
                         self.change_state(State::PlaceElement {
-                            element: Element::Switch(SwitchType::On),
+                            element: Element::Bridge,
                             rotation_cw: 0,
                         });
                     }
                     input::Keycode::Num5 => {
                         self.change_state(State::PlaceElement {
-                            element: Element::Switch(SwitchType::Off),
+                            element: Element::Source,
                             rotation_cw: 0,
                         });
                     }
                     input::Keycode::Num6 => {
                         self.change_state(State::PlaceElement {
-                            element: Element::Bridge,
+                            element: Element::Sink,
                             rotation_cw: 0,
                         });
                     }
