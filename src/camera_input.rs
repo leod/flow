@@ -73,6 +73,9 @@ impl CameraInput {
     }
 
     pub fn update(&mut self, camera: &mut Camera, dt_s: f32) {
+        // Don't jump too far in case of large lag spikes
+        let dt_s = dt_s.min(0.05);
+
         camera.position += self.delta * self.scroll_speed * dt_s;
     }
 }
