@@ -73,6 +73,28 @@ fn screen_to_grid_coords(camera: &Camera, x: i32, y: i32) -> circuit::Coords {
     grid_pos_to_coords(screen_to_grid_pos(camera, x, y))
 }
 
+fn is_selectable_element(element: &Element) -> bool {
+    match element {
+        &Element::Input { .. } => false,
+        &Element::Output { .. } => false,
+        _ => true,
+    }
+}
+
+fn selectable_components(
+    circuit: &Circuit,
+    ids: HashSet<ComponentId>,
+) -> HashSet<ComponentId> {
+    let mut result = HashSet::new();
+    for &id in ids.iter() {
+        let component = circuit.components().get(&id).unwrap();
+        if is_selectable_element(&component.element) {
+            result.insert(id);
+        }
+    }
+    result
+}
+
 impl Hud {
     pub fn new(ctx: &mut Context) -> GameResult<Hud> {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 10)?;
@@ -486,8 +508,11 @@ impl Hud {
                 let rect = Rect::from_coords(start_p, end_p);
 
                 let rect_components = cur_circuit.components_in_rect(rect);
+                let selectable =
+                    selectable_components(cur_circuit, rect_components);
+
                 let mut new_components = prev_components.clone();
-                new_components.extend(rect_components.iter());
+                new_components.extend(selectable.iter());
 
                 let state = if new_components.len() > 0 {
                     State::Select { components: new_components }
@@ -686,14 +711,10 @@ impl Hud {
         _display: &Display,
         selection: &HashSet<ComponentId>,
     ) -> GameResult<()> {
-        graphics::set_color(
-            ctx,
-            graphics::Color::new(0.0, 1.0, 0.0, 1.0),
-        )?;
+        graphics::set_color(ctx, graphics::Color::new(0.0, 1.0, 0.0, 1.0))?;
         for id in selection.iter() {
             let c = cur_circuit.components().get(id).unwrap();
-            let p_t =
-                camera.transform(c.pos.cast() * display::EDGE_LENGTH);
+            let p_t = camera.transform(c.pos.cast() * display::EDGE_LENGTH);
             let size = (c.size().cast() + Vector2::new(0.8, 0.8)) *
                 display::EDGE_LENGTH;
             let trans_size = camera.transform_delta(size);
@@ -780,7 +801,7 @@ impl Hud {
                     cur_circuit,
                     camera,
                     display,
-                    &prev_components
+                    &prev_components,
                 )?;
             }
             State::Select { components } => {
@@ -789,7 +810,7 @@ impl Hud {
                     cur_circuit,
                     camera,
                     display,
-                    &components
+                    &components,
                 )?;
             }
             _ => {}
