@@ -126,6 +126,10 @@ impl Circuit {
                 }
             }
 
+            for &mut (ref mut pos, _) in self.graph.nodes.values_mut() {
+                *pos -= min_pos;
+            }
+
             self.points = self.points
                 .iter()
                 .map(|(&pos, &point)| (pos - min_pos, point))

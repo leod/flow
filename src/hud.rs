@@ -813,6 +813,29 @@ impl Hud {
                     &components,
                 )?;
             }
+            State::Paste => {
+                let action = Action::PlaceCircuitAtPos(
+                    self.clipboard.clone().unwrap(),
+                    self.grid_coords,
+                );
+                let draw_mode = if action.can_perform(cur_circuit) {
+                    display::DrawMode::Plan
+                } else {
+                    display::DrawMode::Invalid
+                };
+
+                let camera_delta = self.grid_coords.cast() * display::EDGE_LENGTH;
+                let mut paste_camera = camera.clone();
+                paste_camera.position -= camera_delta;
+
+                display.draw_circuit(
+                    ctx,
+                    &self.font,
+                    &paste_camera,
+                    self.clipboard.as_ref().unwrap(),
+                    draw_mode
+                );
+            }
             _ => {}
         }
 
