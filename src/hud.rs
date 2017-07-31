@@ -580,6 +580,24 @@ impl Hud {
                             self.clipboard = Some(selection);
                         }
                     }
+                    input::Keycode::X if self.hold_control => {
+                        if components.len() > 0 {
+                            let cur_circuit = self.circuit_mut(
+                                &self.cur_chip_id,
+                                circuit,
+                                chip_db,
+                            );
+                            let mut selection =
+                                cur_circuit.subcircuit(&components);
+                            selection.shift_to_origin();
+                            self.clipboard = Some(selection);
+
+                            let action = Action::RemoveComponents(components);
+                            self.try_perform_action(cur_circuit, action);
+
+                            self.change_state(State::Initial);
+                        }
+                    }
                     input::Keycode::V if self.hold_control => {
                         if self.clipboard.is_some() {
                             self.change_state(State::Paste);
@@ -835,7 +853,7 @@ impl Hud {
                     &paste_camera,
                     self.clipboard.as_ref().unwrap(),
                     draw_mode,
-                );
+                )?;
             }
             _ => {}
         }

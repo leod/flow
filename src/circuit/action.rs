@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashSet, HashMap};
 
 use types::Dir;
 
-use super::{Coords, CellId, Element, Component, Edge, Circuit};
+use super::{Coords, CellId, Element, ComponentId, Component, Edge, Circuit};
 
 #[derive(Clone)]
 pub enum Action {
@@ -14,6 +14,7 @@ pub enum Action {
     PlaceEdge(CellId, CellId, Edge),
     RemoveEdge(CellId, CellId),
     PlaceCircuitAtPos(Circuit, Coords),
+    RemoveComponents(HashSet<ComponentId>),
     ReverseCompound(Vec<Action>),
 }
 
@@ -106,6 +107,9 @@ impl Action {
                     //println!("check {:?}: {:?} + {:?}", p + at_pos, p, at_pos);
                     !circuit.points.contains_key(&(p + at_pos))
                 })
+            }
+            &Action::RemoveComponents(ref ids) => {
+                ids.iter().all(|id| circuit.components.contains_key(id))
             }
             &Action::ReverseCompound(_) => {
                 // ReverseCompound not included here
@@ -265,12 +269,22 @@ impl Action {
                 }
                 Action::ReverseCompound(undo)
             }
+            Action::RemoveComponents(ids) => {
+                let undo = ids.iter()
+                    .map(|id| {
+                        let pos =
+                            circuit.components.get(id).as_ref().unwrap().pos;
+                        Action::RemoveComponentAtPos(pos).perform(circuit)
+                    })
+                    .collect();
+                Action::ReverseCompound(undo)
+            }
             Action::ReverseCompound(actions) => {
                 let undo = actions
                     .into_iter()
                     .rev()
                     .map(|action| action.perform(circuit))
-                    .collect::<Vec<_>>();
+                    .collect();
                 Action::ReverseCompound(undo)
             }
         }
