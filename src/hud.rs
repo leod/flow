@@ -824,7 +824,8 @@ impl Hud {
                     display::DrawMode::Invalid
                 };
 
-                let camera_delta = self.grid_coords.cast() * display::EDGE_LENGTH;
+                let camera_delta = self.grid_coords.cast() *
+                    display::EDGE_LENGTH;
                 let mut paste_camera = camera.clone();
                 paste_camera.position -= camera_delta;
 
@@ -833,7 +834,7 @@ impl Hud {
                     &self.font,
                     &paste_camera,
                     self.clipboard.as_ref().unwrap(),
-                    draw_mode
+                    draw_mode,
                 );
             }
             _ => {}
