@@ -31,6 +31,10 @@ impl<K: Eq + Hash + Copy + Canonize, V> CanonMap<K, V> {
     pub fn iter(&self) -> hash_map::Iter<K::Canon, V> {
         self.0.iter()
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 impl<K: Eq + Hash + Copy + Canonize, V> FromIterator<(K, V)>

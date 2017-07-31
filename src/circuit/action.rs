@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use types::Dir;
 
 use super::{Coords, CellId, Element, Component, Edge, Circuit};
@@ -100,8 +102,10 @@ impl Action {
                 }
             }
             &Action::PlaceCircuitAtPos(ref place_circuit, at_pos) => {
-                place_circuit.points.keys()
-                    .all(|&p| !circuit.points.get(&(p + at_pos)).is_some())
+                place_circuit.points.keys().all(|&p| {
+                    //println!("check {:?}: {:?} + {:?}", p + at_pos, p, at_pos);
+                    !circuit.points.contains_key(&(p + at_pos))
+                })
             }
             &Action::ReverseCompound(_) => {
                 // ReverseCompound not included here
@@ -138,7 +142,6 @@ impl Action {
                 // Mark grid points as used
                 for c in component.rect.iter() {
                     circuit.points.insert(c, component_id);
-                    //println!("mark {:?}", c);
                 }
 
                 Action::RemoveComponentAtPos(component.pos)
@@ -227,15 +230,29 @@ impl Action {
                 Action::PlaceEdge((id_a, cell_a), (id_b, cell_b), edge)
             }
             Action::PlaceCircuitAtPos(place_circuit, at_pos) => {
-                let undo = place_circuit.components
+                let result = place_circuit
+                    .components
                     .iter()
-                    .map(|(&_component_id, place_component)| {
+                    .map(|(&component_id, place_component)| {
                         let mut new_component = place_component.clone();
                         new_component.pos += at_pos;
                         new_component.rect.pos += at_pos;
-                        Action::PlaceComponent(new_component).perform(circuit)
+                        for cell_pos in new_component.cells.iter_mut() {
+                            *cell_pos += at_pos;
+                        }
+
+                        let undo = Action::PlaceComponent(new_component).perform(circuit);
+                        let new_component_id = circuit.get_last_component_id().unwrap();
+                        (undo, (component_id, new_component_id))
                     })
-                    .collect();
+                    .collect::<Vec<_>>();
+                let undo = result.iter().map(|&(ref undo, _)| undo.clone()).collect();
+                let id_map = result.iter().map(|&(_, m)| m).collect::<HashMap<_, _>>();
+                for (&((id_a, cell_a), (id_b, cell_b)), edge) in place_circuit.graph.edges.iter() {
+                    let new_id_a = *id_map.get(&id_a).unwrap();
+                    let new_id_b = *id_map.get(&id_b).unwrap();
+                    circuit.graph.add_edge((new_id_a, cell_a), (new_id_b, cell_b), edge.clone());
+                }
                 Action::ReverseCompound(undo)
             }
             Action::ReverseCompound(actions) => {

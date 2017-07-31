@@ -129,7 +129,7 @@ where
                 node_ids.contains(a_id) && node_ids.contains(b_id)
             })
             .map(|(&nodes, edge)| (nodes, edge.clone()))
-            .collect();
+            .collect::<CanonMap<_, _>>();
         NeighborGraph { nodes, edges }
     }
 }

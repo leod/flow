@@ -119,6 +119,11 @@ impl Circuit {
         if let Some(min_pos) = min_pos {
             for c in self.components.values_mut() {
                 c.pos -= min_pos;
+                c.rect.pos -= min_pos;
+
+                for cell_pos in c.cells.iter_mut() {
+                    *cell_pos -= min_pos;
+                }
             }
 
             self.points = self.points
