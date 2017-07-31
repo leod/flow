@@ -29,7 +29,7 @@ use ggez::{GameResult, Context};
 use ggez::graphics;
 
 use circuit::{ChipDb, Circuit};
-use display::Display;
+use display::{Display, DrawMode};
 use hud::Hud;
 use camera::Camera;
 use camera_input::CameraInput;
@@ -163,13 +163,13 @@ impl event::EventHandler for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx);
 
-        let circuit = self.hud.cur_circuit(&self.circuit, &self.chip_db);
-        self.display.draw_grid_edges(ctx, &self.camera, circuit)?;
-        self.display.draw_components(
+        let cur_circuit = self.hud.cur_circuit(&self.circuit, &self.chip_db);
+        self.display.draw_circuit(
             ctx,
             &self.hud.font,
             &self.camera,
-            circuit,
+            cur_circuit,
+            DrawMode::Real,
         )?;
 
         if let &Some(ref level_state) = &self.level_state {

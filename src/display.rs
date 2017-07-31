@@ -41,8 +41,9 @@ impl Display {
         ctx: &mut Context,
         camera: &Camera,
         circuit: &Circuit,
+        mode: DrawMode,
     ) -> GameResult<()> {
-        graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
+        graphics::set_color(ctx, mode.to_color())?;
 
         for (&(cell_a, cell_b), &_edge) in circuit.graph().edges().iter() {
             let a = *circuit.graph().get_node(cell_a).unwrap();
@@ -358,12 +359,25 @@ impl Display {
         font: &graphics::Font,
         camera: &Camera,
         circuit: &Circuit,
+        mode: DrawMode,
     ) -> GameResult<()> {
         for (ref _id, ref c) in circuit.components().iter() {
-            self.draw_component(ctx, font, camera, c, DrawMode::Real)?;
+            self.draw_component(ctx, font, camera, c, mode)?;
         }
 
         Ok(())
+    }
+
+    pub fn draw_circuit(
+        &self,
+        ctx: &mut Context,
+        font: &graphics::Font,
+        camera: &Camera,
+        circuit: &Circuit,
+        mode: DrawMode,
+    ) -> GameResult<()> {
+        self.draw_grid_edges(ctx, camera, circuit, mode)?;
+        self.draw_components(ctx, font, camera, circuit, mode)
     }
 
     pub fn draw_flow(
