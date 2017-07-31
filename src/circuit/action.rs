@@ -241,17 +241,27 @@ impl Action {
                             *cell_pos += at_pos;
                         }
 
-                        let undo = Action::PlaceComponent(new_component).perform(circuit);
-                        let new_component_id = circuit.get_last_component_id().unwrap();
+                        let undo = Action::PlaceComponent(new_component)
+                            .perform(circuit);
+                        let new_component_id =
+                            circuit.get_last_component_id().unwrap();
                         (undo, (component_id, new_component_id))
                     })
                     .collect::<Vec<_>>();
-                let undo = result.iter().map(|&(ref undo, _)| undo.clone()).collect();
-                let id_map = result.iter().map(|&(_, m)| m).collect::<HashMap<_, _>>();
-                for (&((id_a, cell_a), (id_b, cell_b)), edge) in place_circuit.graph.edges.iter() {
+                let undo =
+                    result.iter().map(|&(ref undo, _)| undo.clone()).collect();
+                let id_map =
+                    result.iter().map(|&(_, m)| m).collect::<HashMap<_, _>>();
+                for (&((id_a, cell_a), (id_b, cell_b)), edge) in
+                    place_circuit.graph.edges.iter()
+                {
                     let new_id_a = *id_map.get(&id_a).unwrap();
                     let new_id_b = *id_map.get(&id_b).unwrap();
-                    circuit.graph.add_edge((new_id_a, cell_a), (new_id_b, cell_b), edge.clone());
+                    circuit.graph.add_edge(
+                        (new_id_a, cell_a),
+                        (new_id_b, cell_b),
+                        edge.clone(),
+                    );
                 }
                 Action::ReverseCompound(undo)
             }
