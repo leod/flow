@@ -11,8 +11,8 @@ use sdl2::keyboard;
 use types::{Dir, Rect, Axis};
 use input::{self, Input};
 use camera::Camera;
-use circuit::{self, ChipId, ChipDb, Circuit, Action, SwitchType,
-              ComponentId, Element};
+use circuit::{self, ChipId, ChipDb, Circuit, Action, SwitchType, ComponentId,
+              Element};
 use display::{self, Display};
 
 #[derive(Clone)]
@@ -416,7 +416,30 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::Select { .. } => {} // TODO
+            State::Select { components } => {
+                match button {
+                    input::MouseButton::Left if !self.hold_shift => {
+                        self.change_state(State::Initial);
+                    }
+                    input::MouseButton::Right => {
+                        self.change_state(State::Initial);
+                    }
+                    input::MouseButton::Left if self.hold_shift => {
+                        let prev_components = if self.hold_control {
+                            components
+                        } else {
+                            HashSet::new()
+                        };
+
+                        self.change_state(State::BoxSelect {
+                            start_grid_pos: grid_pos,
+                            cur_grid_pos: grid_pos,
+                            prev_components,
+                        });
+                    }
+                    _ => {}
+                }
+            }
             State::BoxSelect { .. } => {}
             State::Paste => {
                 // Paste mode can only be entered when we have a clipboard entry.
@@ -439,11 +462,7 @@ impl Hud {
         _x: i32,
         _y: i32,
     ) {
-        let cur_circuit = self.circuit_mut(
-            &self.cur_chip_id,
-            circuit,
-            chip_db,
-        );
+        let cur_circuit = self.circuit_mut(&self.cur_chip_id, circuit, chip_db);
 
         match self.state.clone() {
             State::Initial => {}
@@ -455,12 +474,12 @@ impl Hud {
                     _ => {}
                 }
             }
-            State::PlaceElement { .. } => {},
+            State::PlaceElement { .. } => {}
             State::Select { .. } => {} // TODO
-            State::BoxSelect { 
-                start_grid_pos, 
+            State::BoxSelect {
+                start_grid_pos,
                 cur_grid_pos,
-                prev_components
+                prev_components,
             } => {
                 let start_p = grid_pos_to_coords(start_grid_pos);
                 let end_p = grid_pos_to_coords(cur_grid_pos);
@@ -471,9 +490,7 @@ impl Hud {
                 new_components.extend(rect_components.iter());
 
                 let state = if new_components.len() > 0 {
-                    State::Select {
-                        components: new_components
-                    }
+                    State::Select { components: new_components }
                 } else {
                     State::Initial
                 };
@@ -496,14 +513,9 @@ impl Hud {
             State::PlaceElement { .. } => {
                 match keycode {
                     input::Keycode::Z if self.hold_control => {
-                        if let Some((chip_id, undo_action)) =
-                            self.undo.pop()
-                        {
-                            let action_circuit = self.circuit_mut(
-                                &chip_id,
-                                circuit,
-                                chip_db,
-                            );
+                        if let Some((chip_id, undo_action)) = self.undo.pop() {
+                            let action_circuit =
+                                self.circuit_mut(&chip_id, circuit, chip_db);
                             let redo_action =
                                 undo_action.perform(action_circuit);
                             self.redo.push((chip_id.clone(), redo_action));
@@ -511,14 +523,9 @@ impl Hud {
                         }
                     }
                     input::Keycode::Y if self.hold_control => {
-                        if let Some((chip_id, redo_action)) =
-                            self.redo.pop()
-                        {
-                            let action_circuit = self.circuit_mut(
-                                &chip_id,
-                                circuit,
-                                chip_db,
-                            );
+                        if let Some((chip_id, redo_action)) = self.redo.pop() {
+                            let action_circuit =
+                                self.circuit_mut(&chip_id, circuit, chip_db);
                             let undo_action =
                                 redo_action.perform(action_circuit);
                             self.undo.push((chip_id.clone(), undo_action));
@@ -542,7 +549,8 @@ impl Hud {
                                 circuit,
                                 chip_db,
                             );
-                            let mut selection = cur_circuit.subcircuit(&components);
+                            let mut selection =
+                                cur_circuit.subcircuit(&components);
                             selection.shift_to_origin();
                             self.clipboard = Some(selection);
                         }
@@ -661,17 +669,49 @@ impl Hud {
             }
             State::PlaceElement { .. } => {}
             State::Select { .. } => {}
-            State::BoxSelect { 
-                ref mut cur_grid_pos,
-                ..
-            } => {
-                let grid_pos = screen_to_grid_pos(camera, self.mouse_x, self.mouse_y);
+            State::BoxSelect { ref mut cur_grid_pos, .. } => {
+                let grid_pos =
+                    screen_to_grid_pos(camera, self.mouse_x, self.mouse_y);
                 *cur_grid_pos = grid_pos;
             }
-            State::Paste => {
-
-            }
+            State::Paste => {}
         }
+    }
+
+    pub fn draw_selection(
+        &self,
+        ctx: &mut Context,
+        cur_circuit: &Circuit,
+        camera: &Camera,
+        _display: &Display,
+        selection: &HashSet<ComponentId>,
+    ) -> GameResult<()> {
+        graphics::set_color(
+            ctx,
+            graphics::Color::new(0.0, 1.0, 0.0, 1.0),
+        )?;
+        for id in selection.iter() {
+            let c = cur_circuit.components().get(id).unwrap();
+            let p_t =
+                camera.transform(c.pos.cast() * display::EDGE_LENGTH);
+            let size = (c.size().cast() + Vector2::new(0.8, 0.8)) *
+                display::EDGE_LENGTH;
+            let trans_size = camera.transform_delta(size);
+            let shift = c.size().cast() * display::HALF_EDGE_LENGTH;
+            let trans_shift = camera.transform_delta(shift);
+            let center = p_t + trans_shift;
+
+            let r = graphics::Rect {
+                x: center.x,
+                y: center.y,
+                w: trans_size.x,
+                h: trans_size.y,
+            };
+
+            graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
+        }
+
+        Ok(())
     }
 
     pub fn draw(
@@ -713,10 +753,12 @@ impl Hud {
             State::BoxSelect {
                 start_grid_pos,
                 cur_grid_pos,
-                prev_components: _
+                prev_components,
             } => {
-                let start_t = camera.transform(start_grid_pos * display::EDGE_LENGTH);
-                let cur_t = camera.transform(cur_grid_pos * display::EDGE_LENGTH);
+                let start_t =
+                    camera.transform(start_grid_pos * display::EDGE_LENGTH);
+                let cur_t =
+                    camera.transform(cur_grid_pos * display::EDGE_LENGTH);
                 let center_t = (start_t + cur_t) / 2.0;
                 let size_t = cur_t - start_t;
 
@@ -727,35 +769,28 @@ impl Hud {
                     h: size_t.y,
                 };
 
-                graphics::set_color(ctx, graphics::Color::new(1.0, 1.0, 1.0, 1.0))?;
-                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
-            }
-            State::Select {
-                components
-            } => {
                 graphics::set_color(
                     ctx,
-                    graphics::Color::new(0.0, 1.0, 0.0, 1.0),
+                    graphics::Color::new(1.0, 1.0, 1.0, 1.0),
                 )?;
-                for id in components.iter() {
-                    let c = cur_circuit.components().get(id).unwrap();
-                    let p_t = camera.transform(c.pos.cast() * display::EDGE_LENGTH);
-                    let size = (c.size().cast() + Vector2::new(0.8, 0.8)) *
-                        display::EDGE_LENGTH;
-                    let trans_size = camera.transform_delta(size);
-                    let shift = c.size().cast() * display::HALF_EDGE_LENGTH;
-                    let trans_shift = camera.transform_delta(shift);
-                    let center = p_t + trans_shift;
+                graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
 
-                    let r = graphics::Rect {
-                        x: center.x,
-                        y: center.y,
-                        w: trans_size.x,
-                        h: trans_size.y,
-                    };
-
-                    graphics::rectangle(ctx, graphics::DrawMode::Line, r)?;
-                }
+                self.draw_selection(
+                    ctx,
+                    cur_circuit,
+                    camera,
+                    display,
+                    &prev_components
+                )?;
+            }
+            State::Select { components } => {
+                self.draw_selection(
+                    ctx,
+                    cur_circuit,
+                    camera,
+                    display,
+                    &components
+                )?;
             }
             _ => {}
         }
