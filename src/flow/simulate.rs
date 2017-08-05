@@ -133,6 +133,12 @@ fn update_components(state: &mut State) {
                 power_cell.bound_pressure = enabled;
                 power_cell.pressure = 100.0;
             }
+            Element::Input { size } => {
+                for &cell_idx in component.cells.iter() {
+                    let enabled = state.flow.node(cell_idx).enabled;
+                    state.flow.node_mut(cell_idx).bound_pressure = enabled;
+                }
+            }
             _ => {}
         }
     }
