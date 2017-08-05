@@ -91,7 +91,12 @@ fn project_velocities(state: &mut State) {
         let edge = state.flow.edge_mut(edge_idx);
 
         edge.old_velocity = edge.velocity;
-        edge.velocity = press_from - press_to;
+        edge.velocity =
+            if edge.enabled {
+                press_from - press_to
+            } else {
+                0.0
+            };
     }
 }
 
@@ -134,7 +139,7 @@ fn update_components(state: &mut State) {
     }
 }
 
-fn flow(state: &mut State) {
+fn blob_flow(state: &mut State) {
     /*println!("++++++++++++++++++++++++++++++++++++");
     println!("START");
     println!("++++++++++++++++++++++++++++++++++++");
@@ -239,6 +244,44 @@ fn flow(state: &mut State) {
     println!("++++++++++++++++++++++++++++++++++++");*/
 }
 
+fn instant_flow(state: &mut State) {
+    for node_idx in 0..state.graph.num_nodes() {
+        let cell = state.flow.node_mut(node_idx);
+        cell.in_flow = 0.0;
+        cell.out_flow = 0.0;
+    }
+
+    for edge_idx in 0..state.graph.num_edges() {
+        let edge = state.flow.edge_mut(edge_idx);
+        edge.flow = edge.velocity;
+    }
+
+    for node_idx in 0..state.graph.num_nodes() {
+        for &(neigh_node_idx, edge_idx) in state.graph.neighbors(node_idx) {
+            let velocity = {
+                let edge = state.flow.edge(edge_idx);
+                if edge.enabled {
+                    edge_quantity(node_idx, neigh_node_idx, edge.velocity)
+                } else {
+                    0.0
+                }
+            };
+            if velocity <= 0.0 {
+                continue;
+            }
+
+            {
+                let neigh_node = state.flow.node_mut(neigh_node_idx);
+                neigh_node.in_flow += velocity;
+            }
+            {
+                let node = state.flow.node_mut(node_idx);
+                node.out_flow += velocity;
+            }
+        }
+    }
+}
+
 pub fn time_step(state: &mut State, _dt: f64) {
     update_components(state);
     state.update_mut_indices();
@@ -247,5 +290,6 @@ pub fn time_step(state: &mut State, _dt: f64) {
         return;
     }
     project_velocities(state);
-    flow(state);
+    //blob_flow(state);
+    instant_flow(state);
 }
