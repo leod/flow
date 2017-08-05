@@ -91,12 +91,11 @@ fn project_velocities(state: &mut State) {
         let edge = state.flow.edge_mut(edge_idx);
 
         edge.old_velocity = edge.velocity;
-        edge.velocity =
-            if edge.enabled {
-                press_from - press_to
-            } else {
-                0.0
-            };
+        edge.velocity = if edge.enabled {
+            press_from - press_to
+        } else {
+            0.0
+        };
     }
 }
 
